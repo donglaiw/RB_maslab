@@ -1,2 +1,2 @@
 #/bin/bash
-git push https://github.com/Eminemya/MASlab2012.git
+git push https://github.com/Eminemya/maslab2012.git
