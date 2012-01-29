@@ -8,12 +8,18 @@ import time
 player=ll.Logic()
 #Open Ardiuno connection
 player.Connect()
-
-print "goo",time.time()
-player.SendState(player.pipe_lc,('B',1))
+#player.SwitchOn()
+#find ball
+st=time.time()
+player.GetBall()
 time.sleep(10)
 
-print "wooo"
-player.Close()
 
+"""
+while time.time()-st<=170:
+    player.GetBall()
+    player.GetOutStuck()
+
+"""
+#player.Close()
 

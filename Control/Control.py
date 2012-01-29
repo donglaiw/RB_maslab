@@ -1,101 +1,98 @@
-import serial
-import threading, thread, time, Queue
-import Sensor as ss
+import Arduino as ard
+import multiprocessing, time
 
 timeout = 2
 ############### A)Control Automation###############
-class Control(threading.Thread):
-    def __init__(self,step=1):
-        threading.Thread.__init__(self)    
-        self.ard=Arduino()
-        self.ard.start()
-        #[left,right]
-        self.motors=[ss.Motor(self.ard,0),ss.Motor(self.ard,1)]         
-        self.cservo=ss.Servo(self.ard,7)
-        self.bp=[ss.DigitalSensor(self.ard,24),ss.DigitalSensor(self.ard,26),ss.DigitalSensor(self.ard,28),ss.DigitalSensor(self.ard,30)]
-        self.switch=ss.DigitalSensor(self.ard,22)
-        self.ir=ss.AnalogSensor(self.ard,7)
-        self.bp_val = [0, 0, 0, 0]
-        self.ir_val = [0, 0, 0, 0]        
-        self.dir=1        
-        self.angle=0         
-        self.vs_default=100
-        self.vs_start=90
-        self.vt_default=40
-        self.vt_adjust=100        
-        self.motorstate=''
-        self.prestate=''
-        self.step = step 
-        self.switchon=1
-        self.killed=False        
-        #thread.start_new_thread(self.ControlBumper,())
-        #thread.start_new_thread(self.ControlIR,())        
-        #thread.start_new_thread(self.ControlCounter,())
+class Control(multiprocessing.Process):
+    def __init__(self, pipe=None):
+        multiprocessing.Process.__init__(self)   
 
-    ################## 1) Independent Threads:   ###############################
-    def ControlConnect(self):
-        time.sleep(0.5)
-        return self.ard.portOpened
-    
-    def ControlSwitch(self):
-        time.sleep(0.5)        
-        self.switchon= self.switch.getValue()
-        print "sw: ",self.switchon
-    
-    def ControlBumper(self):
-        while self.killed==False:
-            for i in range(4):
-                self.bp_val[i]=self.bp[i].getValue()
-            time.sleep(0.5)
+        self.pipe_logic = pipe 
+        self.pipe_control, self.pipe_ard = multiprocessing.Pipe()
         
-    def ControlIR(self):
-        while self.killed==False:
-            self.ir_val[0]=self.ir.getValue()
-            time.sleep(1)
+        self.ard = ard.Arduino(self.pipe_ard)        
+        
+        self.motors = [Motor(self, 0), Motor(self, 1)]#[left,right]
+        self.cservo = Servo(self, 7)
+        self.bp = [DigitalSensor(self, 30),DigitalSensor(self, 24), DigitalSensor(self, 28), DigitalSensor(self, 26) ]
+        self.switch = DigitalSensor(self, 22)
+        #self.ir=AnalogSensor(self,7)
 
-    #def ControlCounter(self):
-    def setState(self,state):                   
-            self.prestate=self.motorstate
-            self.motorstate=state
+        self.bp_val = [0, 0, 0, 0]
+        #self.ir_val = [0, 0, 0, 0]
+        self.sensorcount = 0        
+
+        self.angle = 0         
+        self.vt_default = 127
+        self.vt_adjust = 127
+        self.motorstate = ''
+        self.prestate = ''
+        self.ballcount = 0
 
     def run(self):
-        while self.killed==False:   
-            #ordered by freq
-            #print time.time(),self.motorstate
-            if self.motorstate!='':                
-                if self.motorstate=='G':
-                    self.goStraight()                    
-                elif self.motorstate=='T':
-                    #containing stop
-                    self.goTurn()
-                elif self.motorstate=='B':
-                    self.throwBall()
-                elif self.motorstate=='S':
-                    self.stop()
-                self.motorstate=''     
-        
-        self.ard.close()
-        print "close control"          
+        while True:
+            if self.pipe_logic.poll(0.05):
+                #receive command from Logic
+                (self.motorstate, num) = self.pipe_logic.recv()
+                if len(self.motorstate) == 2:
+                    #return changed bumper val  
+                    self.pipe_logic.send(self.bp_val)                                       
+                print self.motorstate
+                #ordered by freq            
+                if self.motorstate == 'G':
+                    self.GoStraight(num)                    
+                elif self.motorstate == 'T':
+                    self.GoTurn(num)
+                elif self.motorstate == 'B':           
+                    self.ThrowBall()
+                elif self.motorstate == 'S':
+                    self.Stop(num)
+                elif self.motorstate=='U':
+                    self.test()
+                self.prestate = self.motorstate
+                self.motorstate = ''
+            else:
+                #update the sensors
+                #print "nooo1"
+                #self.GetSensor()
+                #pass
 
-    ##################  2) ControlMotor:   ###############################
-    def goStraight(self):
+    def test(self):
+        self.motors[0].setVal(127)
+        self.motors[1].setVal(127)
+        #detect bumpers
+        bumped=False
+        """
+        while bumped==False:
+            if con.bp[24].getValue()==
+        """
+
+    ##################  2) Control Navigation:   ###############################
+    def GoStraight(self,speed):
         #self.dir= 1,go forward; -1,backward
-        startmotor=0
-        if self.prestate=='T' and self.angle<=0:
+        startmotor = 1
+        print "t2s",self.prestate,time.time()
+        if self.prestate == 'T' and self.angle <= 0:
             #from turn to straight
-            startmotor=1
-        print "wawa"
-        self.motors[startmotor].setVal(self.vs_start)
+            startmotor = 0
+            print "compensate"
+            self.motors[startmotor].setVal(speed)
+            time.sleep(0.5)
+        else:
+            self.motors[startmotor].setVal(speed)
         #time.sleep(0.1)
         print "later"
-        self.motors[1-startmotor].setVal(self.vs_default)
+        self.motors[1 - startmotor].setVal(speed)
+        """
         #compensating
         time.sleep(0.1)        
-        self.motors[1-startmotor].setVal(self.vs_start)
+        self.motors[startmotor].setVal(self.vs_default*direction)
+        """
         print "go parallel"
         
+        
     """      
-    def goTurn(self, angle,option):
+    def GoTurn(self, angle,option):
         #option=1 turn forward
         #option=-1 turn backward
         #option=0 turn at site
@@ -119,8 +116,8 @@ class Control(threading.Thread):
                 else:
                     self.rmotor.setVal(TBD)
                     self.lmotor.setVal(-TBD)            
-    """        
-    def goTurn(self):
+    
+    def GoTurn(self):
         #angle >0 ,turn right;<0 ,turn left
         if int(abs(self.angle))==1:
             #adjusting during going straight
@@ -140,114 +137,127 @@ class Control(threading.Thread):
             else:
                 self.motors[0].setVal(0)    
                 self.motors[1].setVal(self.vt_default)
-                           
-    def throwBall(self):
-        self.cservo.setAngleT(80)
+    """                               
+    def GoTurn(self, angle):
+        #angle >0 ,turn right;<0 ,turn left
+        if angle > 0:
+            #to start up
+            self.motors[0].setVal(0)            
+            self.motors[1].setVal(self.vt_adjust)
+            time.sleep(0.7)
+            self.motors[1].setVal(0)
+        else:
+            self.motors[1].setVal(0)
+            self.motors[0].setVal(self.vt_adjust)
+            time.sleep(0.7)
+            self.motors[0].setVal(0)
+            print "stop it"
+
+    def ThrowBall(self):
+        print "throw it"
+        self.cservo.setAngle(155)
+        time.sleep(3)
+        self.cservo.setAngle(80)
     
-    def stop(self):
-        self.motors[0].setVal(0)
-        self.motors[1].setVal(0)
+    def Stop(self,num):
+        if num==2:
+            self.motors[0].setVal(0)
+            self.motors[1].setVal(0)
+        else:
+            self.motors[num].setVal(0)
         
-############### B) Control Arduino Connection###############
-#Handles all messages incoming from the various servo and motor classes, and adds them to the queueHandler
-class Arduino(threading.Thread):
-    def __init__(self):
-        threading.Thread.__init__(self)
-        self.commandDict = {} 
-        self.responseDict = {}
-        self.commandQueue = Queue.Queue()
-        self.lock = threading.Lock()
-        self.portOpened = False
-        self.killReceived = False #So a force quit will work
 
-    def run(self):
-        print "Connecting"
-        self.portOpened = self.connect()
-        try:
-            queueThread = threading.Thread(target=self.queueHandler())
-            queueThread.start()
-        except Exception as errorText:
-            print errorText
+    ##################  2) Control Sensors:   ###############################
+    def AddCommand(self, command, portNum, delay, wait): 
+        #implemement a nice schedule instead of multiple thread competing
+        #print "add com: ",command,time.time()
+        self.pipe_control.send((portNum, command, delay, wait))                               
+        if wait:
+            while not self.pipe_control.poll(0.1): True
+            tt=self.pipe_control.recv()
+            #print "papa:",tt
+            return tt
+           
+    def GetSwitch(self):
+        switchon = self.switch.getValue()
+        print "sw: ", switchon
+        return switchon
+    
+    def GetSensor(self):
+        #self.sensorcount=2
+        if self.sensorcount == 4:
+            self.sensorcount = 0
 
-    def connect(self):
-        if self.portOpened: self.close()
-        for i in range(0,5):
-            try:
-                self.port=serial.Serial(port='/dev/ttyACM'+str(i), baudrate=9600, timeout=0)
-                time.sleep(2) #Allows the arduino to initialize
-                self.port.flush()
-                break        
-            except:
-                print "Arduino not connected"
-                    
-        print "Connected"
-        return True
-
-    def close(self):
-        if self.portOpened:
-            print "closing"
-            self.port.flush()
-            self.port.close()            
-            self.portOpened = False
-            thread.exit()
+        self.GetBumper(self.sensorcount)
+        """
+        if self.sensorcount==0 or self.sensorcount==5:
+            self.sensorcount=0
+            self.GetBumper(self.sensorcount)
+        else:
+            self.GetIR(self.sensorcount-4)
+        """
+        self.sensorcount += 1
         
-    def addCommand(self, command, portNum, delay, waitForResponse): #Actuators get the command sent over and over
-        #The port is used as a unique identifier, since it's counterproductive to be sending different commands to the same port
-        #Delay exists because if there is no pause after a command is sent, the arduino effectively does nothing.
-        #However, the best delay may be different between the different commands.
-        
-        self.lock.acquire()
-        self.responseDict[portNum]=''
-        self.commandDict[portNum] = [command,delay]
-        self.lock.release()
-
-        if waitForResponse:
-            initTime = time.time()
-            while ((self.responseDict[portNum]=='') and (time.time()-initTime<timeout)): True
-            return self.responseDict[portNum]
-
-    def removeCommand(self,portNum):
-        #Only required if you want the port to send no commands to the actuator at all
-        #Add command changes the command being sent to the port, but isn't very good at removing a commands entirely
-        self.lock.acquire()
-        del self.commandDict[portNum]
-        self.lock.release()
-
-    def updateQueue(self):
-        self.queue = Queue.Queue()
-        #Can theoretically add a command while this is happening, thus the locking
-        self.lock.acquire()
-        for portNum,command in self.commandDict.iteritems():
-            self.queue.put((portNum,command[0]))
-        self.lock.release()
-
-    def queueHandler(self):
-        if not self.portOpened: thread.exit()
-        while self.portOpened and not self.killReceived:
+    def GetBumper(self, num):
+        self.bp_val[num] = self.bp[num].getValue()                
+        if (num==0 or num==3) and self.bp_val[num]==0:
+            print num,self.bp_val[num]
             
-            self.updateQueue()
-            #print str(self.queue.qsize())+"  nowwww "
-            while not self.queue.empty():
-                (portNum,command)=self.queue.get_nowait()
 
-                #Write Command
-                self.port.flush()
-                self.port.write(command)
-                print str(self.queue.qsize())+"  doo "+command
+    def GetIR(self, num):
+        self.ir_val[num] = self.ir.getValue()
 
-                #Pause so the arduino can process
-                delayParam = float(self.commandDict[portNum][1])
-                time.sleep(delayParam) #<---maybe
-                
-                print str(self.queue.qsize())+"  dothis "
-                #Read from arduino
-                fromArd = self.port.readline()
-                self.port.flush()
-                self.responseDict[portNum]=fromArd #To make sure commandDict isn't changed by this thread
-                time.sleep(.1)
-                print "done"
-                #remove
-                del self.commandDict[portNum]
-                #print "{0} : {1}".format(command,fromArd)
+    #def ControlCounter(self):
 
-            self.portOpened=self.port.isOpen()
+###############Servo Class###############
+class Servo:
+    def __init__(self, _control, _port):
+        self.control = _control
+        self.portNum = _port
+    def setAngle(self, angle):
+        command = "S%(port)02d%(angle)03d" % {'port': self.portNum, 'angle':angle}
+        self.control.AddCommand(command, self.portNum, 0.15, False)
+
+###############Motor Class###############
+class Motor:
+    def __init__(self, _control, _num):
+        self.control = _control
+        self.motorNum = _num
+        self.ID = "M{0}".format(_num)
+    def setVal(self, val): #val between 0 and 255
+        command = "M%(num)01d%(val)03d" % {'num': self.motorNum, 'val':val}
+        self.control.AddCommand(command, self.ID, 0.15, False)
+###############Analog Sensor Class###############
+class AnalogSensor:
+    def __init__(self, _control, _port):
+        self.control = _control
+        self.portNum = _port
+    def getValue(self): #Returns a voltage value
+        command = "A%(port)02d" % {'port': self.portNum}
+        value = self.control.AddCommand(command, self.portNum, 0.15, True) 
+        if not value == '':
+            try:
+                val = int(value) * 5.0 / 1023 #Converts the signal to a voltage
+            except:
+                val = -1000
+                print value            
+        else:
+            val = -1000
+        return val        
+###############Digital Sensor Class###############
+class DigitalSensor:
+    def __init__(self, _control, _port):
+        self.control = _control
+        self.portNum = _port
+    def getValue(self): #Returns a voltage value
+        command = "D%(port)02d" % {'port': self.portNum}
+        value = self.control.AddCommand(command, self.portNum, 0.15, True)
+        if not value == '':
+            try:
+                val = int(value)
+            except:
+                val = -1000
+                print value
+        else:
+            val = -1000
+        return val

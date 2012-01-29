@@ -4,7 +4,6 @@ import Vision as vv
 from Tkinter import *
 import time
 from PIL import Image,ImageTk
-import threading
 import cv
 class MaxLengthEntry(Entry):
     # base class for validating entry widgets
@@ -43,6 +42,7 @@ class Calibrate():
         self.cali_type = IntVar()
         self.hsvEntry=[Entry()]*12
         self.Imgbox=[Label()]*2
+        self.objLabel=Label()
         self.dispsize=(160,120) 
         self.vision=vv.Vision(0.1)
         self.state=['r','y','b']
@@ -56,19 +56,14 @@ class Calibrate():
         self.createHSV(1) 
         self.createButtons()
         self.createRadioButtons()
-        #self.createTxtbox()        
+        self.createTxtbox()        
         self.createImgbox()
         #print self.cali_type.get()
         self.root.mainloop()
         
     def createTxtbox(self):
         frametxt = Frame(self.root)        
-        num=0
-        """
-        if self.cali_type.get()==0:
-            num=self.vision.numcircle
-        """
-        Label(frametxt,text="num of detection: "+str(num)).pack(side=LEFT)
+        self.objLabel=Label(frametxt,text="num of detection: 0")        
         frametxt.pack()
               
     def createImgbox(self):
@@ -99,6 +94,9 @@ class Calibrate():
             self.Imgbox[1]["image"]=img_tk2
             self.Imgbox[1].photo = img_tk2
             self.Imgbox[1].pack(side=RIGHT)
+            
+            self.objLabel["text"]="num of detection: "+str(self.vision.numobj)
+            self.objLabel.pack(side=LEFT)
         else:
             print "no input"
 

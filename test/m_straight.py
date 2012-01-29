@@ -1,31 +1,22 @@
+import cv
 import sys
-sys.path.append("../Control")
-import Control as cc
-import time
+sys.path.append("../Logic")
+import Logic as ll
+import time 
 
 
-
-con = cc.Control(0.1)
-while not con.ard.portOpened: True # Stand by waiting for Arduino to get ready
-
-
-
-
-print "right"
-con.motors[0].setVal(120)
-con.motors[1].setVal(120)
+player=ll.Logic()
+#Open Ardiuno connection
+player.Connect()
+player.SwitchOn()
+#find ball
+player.SendState(player.pipe_lc,('G',127))
 time.sleep(5)
-con.motors[0].setVal(0)
-con.motors[1].setVal(0)
-""""""
-#con.lmotor.setVal(100)
+#player.GetBall()
+
 """
-con.goStraight() 
-print "now go go go"
-time.sleep(100)
-con.lmotor.setVal(0)
-con.rmotor.setVal(0)
+while time.time()-st<=170:
+    player.GetBall()
 """
-con.ard.close()
-print "close"
+player.Close()
 

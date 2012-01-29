@@ -1,11 +1,10 @@
 import cv
-import time
 import sys
-sys.path.append("../../CheckPoints")
-import cp5_calibrate as cali
-import thread,threading
-import Queue
-import multiprocessing as mp
+sys.path.append('../Vision')
+import Vision as vv
+import cv
+import time
+
 
 """
 #1. test camera frame rate
@@ -19,14 +18,14 @@ cv.SaveImage("wo.jpg",img)
 print "Camera",(time.time()-st)/10,"seconds per frame"
 """
 #2. test image processing speed
-CP=cali.CvProcess((640,480),[0, 50, 100,10,180, 256,150, 50,100,256,180,256])
+#CP=cali.CvProcess((640,480),[0, 50, 100,10,180, 256,150, 50,100,256,180,256])
 #CP.frame=cv.QueryFrame(CP.capture)
-CP.frame=cv.LoadImage("camli.jpg")
+#CP.frame=cv.LoadImage("camli.jpg")
+aa=vv.Vision(None)
 cc=0
 st=time.time()
-while cc<1:
-    CP.lock=1
-    CP.FindCircle()
+while cc<10:
+    aa.FindCircle()
     cc+=1
 print "Image Processing", (time.time()-st)/10,"seconds per frame"
 """

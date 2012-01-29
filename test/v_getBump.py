@@ -1,32 +1,62 @@
-import cv
 import sys
 sys.path.append("../Logic")
+import Logic as ll
 sys.path.append("../Control")
 import Control as cc
-import Logic as ll
-import time 
+import multiprocessing,time
 
 
+pipe_lc, pipe_control = multiprocessing.Pipe()
+control = cc.Control(pipe_control)
+#connect ardiuno
+control.ard.connect()
+while not control.ard.portOpened: True
+control.ard.start()
+control.start()
+time.sleep(5)
+print "start it "
+pipe_lc.send(("G",1))
+while not pipe_control.poll(0.1):
+    pipe_lc.send(("PP",1))
+    while not pipe_lc.poll(0.1): True
+    state=pipe_lc.recv()
+    if state[2]+state[3]>1:
+
+
+"""
+while True:
+    pipe_lc.send(("PP",0))
+"""
+
+"""
 player=ll.Logic()
 #Open Ardiuno connection
 player.Connect()
 
-#player.SwitchOn()
+player.SwitchOn()
+#find ball
+#player.GetBall()
 
+#dump ball
+while True:
+    #print "want  ",time.time()    
+    player.GetBumper()
+    time.sleep(5)
+    print "do it========================"
+    #print "get ",player.bp_val,"   ",time.time()
 #print "goo",time.time()
-player.SendState(player.pipe_lc,('G',1))
-"""
-time.sleep(5)
-player.SendState(player.pipe_lc,('T',1))
-time.sleep(5)
-player.SendState(player.pipe_lc,('S',1))
-"""
-time.sleep(10)
-print "wooo"
+#print "wooo"
 player.Close()
 
+"""
 
 
+
+
+
+
+#Sensor broke...
+#player.SwitchOn()
 
 
 """

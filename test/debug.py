@@ -23,24 +23,28 @@ class Logic(multiprocessing.Process):
         self.current_st = 0
         self.ballcount = 0
         self.target=0
-        self.bp_val=None
+        self.bp_val=[1,1,1,1]
+        self.timeout=3
+       
 
     def Connect(self):
         self.control.ard.connect()
         while not self.control.ard.portOpened: True
         self.control.ard.start()
 
-    def SwitchOn(self):
-        tmp=self.control.GetSwitch()
-        #while True:
+    def SwitchOn(self):        
+        tmp=1       
         while tmp==1 or tmp==-1000:
-            #print tmp
-            tmp=self.control.GetSwitch()
+            self.SendState('c',('SSS',1)) 
+            while not self.pipe_lc.poll(0.1): True
+            tmp=self.pipe_lc.recv()
+            print tmp
     
     def SendState(self,option,msg):
         # need time out control
         sent=True
         if option=='v':            
+            #print "shoot vision",self.pipe_vision.poll(0.1)
             if not self.pipe_vision.poll(0.1):
                 self.pipe_lv.send(msg)
             else:
@@ -50,7 +54,7 @@ class Logic(multiprocessing.Process):
                 self.pipe_lc.send(msg)
             else:
                 sent=False
-            print sent,"sending..",msg
+            #print sent,"sending..",msg
         return sent
 
 
@@ -95,7 +99,7 @@ class Logic(multiprocessing.Process):
         
     def GetBall(self):                
         #find ball
-
+        print "start ball",time.time()
         self.FindObj()      
         print "step 1",time.time()
         #track ball 
@@ -103,10 +107,13 @@ class Logic(multiprocessing.Process):
         #get ball: go go go        
         #submit until success 
         while not self.SendState('c',('G',127)):True
-        time.sleep(10)
+        #time.sleep(10)
+        
+        
+        while  sum([self.bp_val[0],self.bp_val[3]])==0:True
+            
+        print self.bp_val
         """
-        self.GetBumper()
-        while  sum([self.bp_val[0],self.bp_val[3]])==0 and : True
         #move back            
         if  sum([self.bp_val[0],self.bp_val[3]])!=0:                
             self.GetOutStuck()        
@@ -127,19 +134,12 @@ class Logic(multiprocessing.Process):
         print "found"
         # go to wall    
         while not self.SendState('c',('G',127)):True
-        #time.sleep(10)
-
-        while  sum([self.bp_val[0],self.bp_val[3]])==0 : True
-        print "stuck",self.bp_val
-        if self.bp_val[0]==0:
-            self.SendState('c',("S",0))    
-        else:
-            self.SendState('c',("S",1)) 
+        time.sleep(5)
+        #while  sum([self.bp_val[0],self.bp_val[3]])==0 : True
         #self.control.setState('S')        
         # throw ball
         #print "throw"
-        self.SendState('c',('B',0))    
-        time.sleep(4)
+        #self.SendState('c',('B',0))    
         #self.ballcount=0
         #move back
         """
@@ -155,20 +155,16 @@ class Logic(multiprocessing.Process):
         while not self.pipe_lv.poll(0.05): True
         state=self.pipe_lv.recv()
         print "first try"
-        st=time.time()
         if state==0:
-            self.SendState('c',("T",1))
+            #self.SendState('c',("T",1))
             #print "rotate"
-            while state==0 and time.time()-st<=20:
-                self.SendState('c',("T",1))              
+            while state==0:
+                #self.SendState('c',("T",1))              
                 self.SendState('v','found?')                                    
                 while not self.pipe_lv.poll(0.05):True
                 state=self.pipe_lv.recv()
                 #print "now .. try ",state
-            if state==0:
-                #get out of stuck
-                self.GetOutStuck()
-                self.FindObj()            
+            
         print "Obj Found"
         
         
@@ -189,20 +185,19 @@ class Logic(multiprocessing.Process):
     def GetOutStuck(self):
         """
         out = 1
-        while out!=0 and :d
+        while out!=0 and :
             self.control.goTurn(15)
             out =  sum([self.bp_val[0],self.bp_val[3]])
             print "rotate to get out of stuck",self.control.x,self.control.y,self.control.angle,out
         
         """
         print "try to get out"
-        self.SendState('c',("G",-99))
-        time.sleep(10) 
-        print "back"
-        #while  sum([self.bp_val[0],self.bp_val[3]])!=0: True
-        #self.control.setState('T')
-        #time.sleep(2)
-        self.SendState('c',("T",1))
+        while not self.SendState('c',('G',-99)):True
+        
+        st=time.time()
+        while  sum([self.bp_val[0],self.bp_val[3]])!=0 and time.time()-st<self.timeout: True
+        #while not self.SendState('c',('T',1)):True
+        #time.sleep(2)        
 
 if __name__ == "__main__":
 
