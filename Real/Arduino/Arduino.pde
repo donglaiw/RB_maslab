@@ -31,6 +31,7 @@ CompactQik2s9v1 motor = CompactQik2s9v1(&mySerial, rstPin);
 int IR[4][2]= {{0,0},{0,0},{0,0},{0,0}}; //0:old val, 1: new val
 int prestate=-1,state=-1;
 int fb=0,fb_c=0,fb_thres=5;
+int rd=0,rd_c=0,rd_thres=5;
 int diff_thres=50; //simple filter out ir outlier
 
 char Gstate=0;
@@ -139,12 +140,12 @@ void DumpBall() {
     servo.write(60);
     delay(10);
     }
+
 void AlignWall() {
     int stuck=0;
     setMotor(120,120);
     int val_l=1;
     int val_r=1;
-
     while(stuck==0) {
         val_l=digitalRead(26);
         val_r=digitalRead(30);
@@ -184,10 +185,48 @@ void AlignWall() {
 void FindWall() {
     int a=1;
     }
+void Navigation(){
 
+     FrontBlock();
+     RightDisappear();
+
+	if (fb==1){
+        if(rd==1){
+    		//go into the new era
+	    	goTurn90(1);
+          }else{
+			goTurn90(-1);
+		}
+    }else{
+        if(rd==1){
+    		//go into the new era
+	    	goTurn90(1);
+		}else{
+   			FollowRightWall();
+		}
+   }
+}
+
+//Rule 3
+void RightDisappear() {
+    int val=getIr(R_IR);
+    if(val<100) {
+        rd_c+=1;
+        if(rd_c>rd_thres) {
+            rd_c=0;
+            rd=1;
+            }
+        }
+    else {
+        rd=0;
+        rd_c=0;
+        }
+    }
+//Rule 2
 void FrontBlock() {
-    int val=getIr(F_IR);
-    if(val > 400) {
+    int val2=getIr(F_IR);
+    int val3=getIr(S_IR);
+    if(val2 > 400||(val3>400)) {
         fb_c+=1;
         if(fb_c>fb_thres) {
             fb_c=0;
@@ -198,22 +237,12 @@ void FrontBlock() {
         fb=0;
         fb_c=0;
         }
-//Serial.println(val+" "+fb);
     }
+
+//Rule 1
 void FollowRightWall() {
     int val=getIr(R_IR);
-    int val2=getIr(F_IR);
-    int val3=getIr(S_IR);
-
     //right wall disappear
-    if (val<100) {
-        state=-2;
-        }
-    else if((val2>300)||(val3>350)) {
-        //left front corner near
-        state=-1;
-        }
-    else {
         //400-500 is ideal
         if(val >600) {
             // if we are way too close, turn away fast
@@ -236,15 +265,6 @@ void FollowRightWall() {
     if (state!=prestate) {
         prestate=state;
         switch (state) {
-            case -2:
-                //setMotor(120,120);
-                //delay(500);
-                setMotor(120,30);
-                //delay(500);
-                break;
-            case -1:
-                setMotor(-120,120);
-                break;
             case 0:
                 setMotor(60,120);
                 break;
