@@ -2,11 +2,10 @@ from PIL import Image, ImageDraw
 import math, random
 import time
 import Img2Gif
-import thread
 import sys
-sys.path.append("../Logic/")
-
-import Logic_nothread as ll
+sys.path.append("Logic")
+import Logic as ll
+import Util
 import numpy as np
 
 class Simulator():
@@ -33,33 +32,31 @@ class Simulator():
         
     def display(self):
         thres = 0
-        cc=0
-        tt = time.time()        
-        while  tt - self.st < self.total:
-            if tt - self.st >= thres:
-                self.cur = [self.player.control.x, self.player.control.y, self.player.control.angle]
-                self.findcarCorner()
-                self.CheckCollision()
-                #print self.bdpt
-                self.campt = self.findcarSensor(self.player.control.camangle)
-                self.cenpt = self.findcarSensor(self.player.control.eatangle)
-                self.CheckBall() 
-                self.player.vision.frame = [self.cenpt[0], self.cenpt[1], [self.cur[0], self.cur[1]], self.circles]
-                #print self.player.vision.frame
-                #print self.bdpt,self.campt,self.cenpt,self.cur                                               
-                if self.player.control.thrown:
-                    self.ThrowBall()         
-                    self.player.control.thrown=False           
-                self.drawbg()
-                self.drawcar()                
-                #print self.cur[0],self.cur[1],thres
-                self.imgs[cc] = self.bg.copy()
-                self.player.run()
-                #self.bg.save(str(thres) + "ha.png", "PNG")
-                #print "frame", thres,self.player.vision.frame[3]
-                thres += self.step
-                cc+=1
-            tt = time.time()
+        while  thres < self.total:
+            #1. car pos
+            self.cur = [self.player.control.x, self.player.control.y, self.player.control.angle]            
+            self.findcarCorner()
+            
+            #2. check car boundary/sensor line/ball eating/ball throwing
+            self.CheckCollision()                        
+            self.campt = self.findcarSensor(self.player.control.camangle)
+            self.cenpt = self.findcarSensor(self.player.control.eatangle)                        
+            self.CheckBall() 
+            self.player.vision.frame = [self.cenpt[0], self.cenpt[1], [self.cur[0], self.cur[1]], self.circles]
+            if self.player.control.thrown:
+                self.ThrowBall()         
+                self.player.control.thrown=False           
+            
+            #3. display
+            self.drawbg()
+            self.drawcar()                
+            self.imgs[thres] = self.bg.copy()
+            
+            #4. update player
+            self.player.run()
+            #self.bg.save(str(thres) + "ha.png", "PNG")
+            #print "frame", thres
+            thres += 1
         
     ########################################## 1. Logic Check       ###############################
     def CheckCollision(self):
@@ -77,7 +74,11 @@ class Simulator():
                 self.cur[1] -= delta[1]
                 #print "Collision",i,"th bumper sensor",self.cur
             else:
-                self.player.control.bp_val[i] = 0
+                self.player.control.bp_val[i] = 1
+        if sum( self.player.control.bp_val)==4:
+            self.player.stuck=1
+        else:
+            self.player.stuck=0
         #print self.player.control.bp_val
                 
 
@@ -87,11 +88,11 @@ class Simulator():
             #print i,[self.bdpt[1],self.bdpt[0],self.bdpt[2]],[self.bdpt[3],self.bdpt[2],self.bdpt[0]]
             #print self.bdpt
             """
-            print "bb:",self.player.vision.ptwithin([self.bdpt[2],self.bdpt[0],self.bdpt[1],self.circles[i][:2]])
+            print "bb:",Util.ptwithin([self.bdpt[2],self.bdpt[0],self.bdpt[1],self.circles[i][:2]])
             time.sleep(2)            
-            print "cc:",self.player.vision.ptwithin([self.bdpt[0],self.bdpt[2],self.bdpt[3],self.circles[i][:2]])
+            print "cc:",Util.ptwithin([self.bdpt[0],self.bdpt[2],self.bdpt[3],self.circles[i][:2]])
             """
-            if self.player.vision.ptwithin([self.bdpt[2],self.bdpt[0],self.bdpt[1],self.circles[i][:2]])!=0 and self.player.vision.ptwithin([self.bdpt[0],self.bdpt[2],self.bdpt[3],self.circles[i][:2]])!=0: 
+            if Util.ptwithin([self.bdpt[2],self.bdpt[0],self.bdpt[1],self.circles[i][:2]])!=0 and Util.ptwithin([self.bdpt[0],self.bdpt[2],self.bdpt[3],self.circles[i][:2]])!=0: 
                 #print self.circles,self.player.vision.frame
                 del self.circles[i]
                 #self.player.control.new=1
@@ -148,7 +149,7 @@ class Simulator():
     
     #should use vision.findcircle    
     def findcarSensor(self, angle):
-        an = map(lambda x:self.player.control.st_angle(x),[self.cur[2] + angle, self.cur[2] - angle])
+        an = map(lambda x:Util.adjust_angle(x),[self.cur[2] + angle, self.cur[2] - angle])
         tanan = [math.tan(a / 180 * math.pi) for a in an]                
         pt = [[0, 0]] * 2
         const = [100, 500]        
