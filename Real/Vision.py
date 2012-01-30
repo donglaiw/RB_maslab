@@ -199,8 +199,8 @@ class Vision (multiprocessing.Process):
         print self.blueline
     
     def CheckStuck(self):          
-        mat = np.asarray(self.small[:, :], dtype=np.uint8)
-        mat2 = np.asarray(self.presmall[:, :], dtype=np.uint8)
+        mat = np.asarray(self.sample[:, :], dtype=np.uint8)
+        mat2 = np.asarray(self.small[:, :], dtype=np.uint8)
         thres = self.same_thres
         ww = self.sample_size[0]            
         hh = self.sample_size[1]
