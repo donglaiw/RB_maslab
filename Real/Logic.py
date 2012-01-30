@@ -209,8 +209,9 @@ if __name__ == "__main__":
 
     player=Logic()
     #Open Ardiuno connection
+    print "cc"
     player.Connect()
-
+    print "ahha"
     #Waiting for switch
     player.SwitchOn()
 
