@@ -34,7 +34,7 @@ int fb=0,fb_c=0,fb_thres=10;
 int rd=0,rd_c=0,rd_thres=5;
 int diff_thres=50; //simple filter out ir outlier
 
-char Gstate='';
+char Gstate=' ';
 
 
 void setup() {
@@ -115,14 +115,8 @@ void Navigation(){
 	if (fb==1){
         if(rd==1){
       //go into the new era
-		goUturn();
-		//go into the new era
-   	//goTurn60(-1);
-        setMotor(80,120);
-        delay(800);
-      	setMotor(120,-100);
-        delay(1500);
-          }else{
+goUturn();
+      }else{
 	goTurn60(-1);
 	}
     }else{
@@ -131,14 +125,7 @@ void Navigation(){
 		goUturn();
 	}else{
    	FollowRightWall();
-    }
-        setMotor(80,120);
-        delay(800);
-      	setMotor(120,-100);
-        delay(1500);
-	}else{
-   	FollowRightWall();
-		}
+        }
    }
 }
 void goUturn(){
