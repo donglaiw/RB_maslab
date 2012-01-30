@@ -1,12 +1,11 @@
-import Arduino as ard
 import multiprocessing, time
 
 ############### A)Control Automation###############
 class Control(multiprocessing.Process):
-    def __init__(self,.pipe_logic.None):
+    def __init__(self,pipe=None):
         # process communication
         multiprocessing.Process.__init__(self)   
-        self.pipe_logic.logic = pipe
+        self.pipe_logic = pipe
         
         # Arduino Connection
         self.portOpened = False
