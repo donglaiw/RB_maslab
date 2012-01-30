@@ -178,7 +178,7 @@ class Vision (multiprocessing.Process):
         maxlen = np.zeros(2, int)        
         #print thres,mat[0]
         weave.inline(self.codewall, ['mat', 'thres', 'w_thres', 'h_thres', 'ww', 'hh', 's_p', 'e_p', 'maxlen'])
-        print maxlen ,self.height_thres
+        #print maxlen ,self.height_thres
         if maxlen[1] >= self.height_thres:
             self.wall = (s_p[1], e_p[1])
             self.target = e_p[0]
@@ -547,7 +547,7 @@ connectedness:
 	    windex=0;    
         for (int j=0; j<ww; ++j){/*each width*/
         tmp2=hindex+windex;
-        tmp1=tmp1*step
+        tmp1=tmp2*step;
         if(  abs(mat[tmp1]-mat2[tmp2])>thres 
           || abs(mat[tmp1+1]-mat2[tmp2+1])>thres
           || abs(mat[tmp1+2]-mat2[tmp2+2])>thres
