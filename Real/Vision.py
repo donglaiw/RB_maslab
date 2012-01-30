@@ -23,22 +23,23 @@ class Vision (multiprocessing.Process):
         self.frame=cv.QueryFrame(self.capture)
         #self.frame = cv.LoadImage("../test/img/117.jpg")        
         #cv.SaveImage("hh.jpg",self.frame)                
-        self.size = (640, 480)        
-        self.strip_size = (160, 120)
-        #self.strip_size =self.size        
-        self.small = cv.CreateImage(self.strip_size, cv.IPL_DEPTH_8U, 3)
-        self.presmall = cv.CreateImage(self.strip_size, cv.IPL_DEPTH_8U, 3)
-        self.hsv_frame = cv.CreateImage(self.strip_size, cv.IPL_DEPTH_8U, 3)
+        self.camsize = (640, 480)        
+        self.sample_size = (160, 120)
+        self.small_size=(80,60,3)
+        self.step=self.sample_size[0]/self.small_size[0]
         self.hsv = [[0] * 12] * 3        
         self.loadHSV()
 
         #3. for circle
+        self.sample = cv.CreateImage(self.sample_size, cv.IPL_DEPTH_8U, 3)        
+        self.hsv_frame = cv.CreateImage(self.sample_size, cv.IPL_DEPTH_8U, 3)
+        self.hsv_np=None
         self.circles = np.array([0] * 102, np.uint16) #the largest circle
         self.thresholded =None
         self.thresholded2 =None
 
-        self.circle_thres = self.strip_size[0] * self.strip_size[1] / 350
-        self.label = np.zeros(self.strip_size, np.uint16)
+        self.circle_thres = self.sample_size[0] * self.sample_size[1] / 350
+        self.label = np.zeros(self.sample_size, np.uint16)
         self.maxnumcl = np.array([1000], np.uint16)
         self.count = np.zeros(self.maxnumcl[0], np.uint16)
         self.labeltable = np.zeros(self.maxnumcl[0], np.uint16)
@@ -47,19 +48,20 @@ class Vision (multiprocessing.Process):
         self.lwmin = np.zeros(self.maxnumcl[0], np.uint16)
         self.lwmax = np.zeros(self.maxnumcl[0], np.uint16)
         
-        #3.1. for blue line
-        self.blueline = np.zeros(self.strip_size[0], np.uint16)
-        self.blue_thres = int(0.05 * self.strip_size[1])
+        #3.1 blue wall
+        self.blueline = np.zeros(self.sample_size[0], np.uint16)
+        self.blue_thres = int(0.05 * self.sample_size[1])
               
-        #4. for wall
+        #3.2. yellow wall
         self.wall = []
-        self.width_thres = 0.7 * self.strip_size[0]
-        self.height_thres = 0.05 * self.strip_size[1]        
+        self.width_thres = 0.7 * self.sample_size[0]
+        self.height_thres = 0.05 * self.sample_size[1]        
         
         #5. for stuck
+        self.small = np.zeros(self.small_size, np.uint8)
         self.same_thres = 15
         self.diff_count = np.zeros(1, np.uint16)
-        self.stuck_thres = self.strip_size[0] * self.strip_size[1] / 100
+        self.stuck_thres = self.sample_size[0] * self.sample_size[1] / 100
         self.stuck_acc=0
         self.stuck_acc_thres=6
         
@@ -71,30 +73,17 @@ class Vision (multiprocessing.Process):
             #1. check for logical communication
             if self.pipe_vision.poll(0.01):             
                 #command from logic
-                cmd = self.pipe_vision.recv()
-                #print "roger...............",cmd,len(cmd),time.time()
-                if len(cmd) > 2: #ask for obj
-                    #print "vision send",self.target
-                    self.pipe_vision.send(self.target)
-                    #print "answer it .....",time.time()
-                else: #set new state
-                    #print "current state",cmd
-                    self.state = cmd
-                    self.stuck_acc=0
+                self.pipe_vision.send(self.target)
 
             #print "0: " ,time.time()
             #2. vision process
             self.frame = cv.QueryFrame(self.capture)
             if self.frame!=None:
-                cv.Resize(self.frame, self.small)                                        
-                #2.1 check for obj
-                cv.CvtColor(self.small, self.hsv_frame, cv.CV_BGR2HSV)
-                if self.state == 'r':
-                    self.FindCircle()
-                elif self.state == 'y':
-                    self.FindWall()                
-                #2.2 check for stuck
-                #print "soo",self.target,self.stuck_acc
+                cv.Resize(self.frame,self.sample)
+                cv.CvtColor(self.sample, self.hsv_frame, cv.CV_BGR2HSV)
+                self.hsv_np= np.asarray(self.hsv_frame[:, :], dtype=np.uint8)
+
+                #2.1 check for stuck
                 self.CheckStuck()
                 #print "2: ",time.time()
                 if self.stuck_acc >= self.stuck_acc_thres:
@@ -102,8 +91,12 @@ class Vision (multiprocessing.Process):
                     self.target = -1
                     self.stuck_acc = self.stuck_acc_thres                                                
                     #print "alarm ...........target"
-
-                cv.Copy(self.small, self.presmall)
+                
+                if self.target>-1:
+                    #2.2 check for obj
+                    self.FindCircle()
+                    self.FindWall()                
+                self.Copy()
                 #print "3: ",time.time()
             else:
                 print "no img"
@@ -127,24 +120,19 @@ class Vision (multiprocessing.Process):
 
         self.setThres()
     
-    def setThres(self):  
-        self.r0min = cv.Scalar(self.hsv[0][0], self.hsv[0][1], self.hsv[0][2], 0)
-        self.r0max = cv.Scalar(self.hsv[0][3], self.hsv[0][4], self.hsv[0][5], 0)
-        
-        self.r1min = cv.Scalar(self.hsv[0][6], self.hsv[0][7], self.hsv[0][8], 0)
-        self.r1max = cv.Scalar(self.hsv[0][9], self.hsv[0][10], self.hsv[0][11], 0)
-        
-        self.y0min = cv.Scalar(self.hsv[1][0], self.hsv[1][1], self.hsv[1][2], 0)        
-        self.y0max = cv.Scalar(self.hsv[1][3], self.hsv[1][4], self.hsv[1][5], 0)
-        #print self.y0min,self.y0max
-        self.b0min = cv.Scalar(self.hsv[2][0], self.hsv[2][1], self.hsv[2][2], 0)
-        self.b0max = cv.Scalar(self.hsv[2][3], self.hsv[2][4], self.hsv[2][5], 0)            
 
+    def Copy(self):          
+        mat = self.hsv_np
+        mat2 = self.small
+        ww = self.small_size[0]            
+        hh = self.small_size[1]
+        step=self.step
+        weave.inline(self.codestuck, ['mat', 'mat2', 'ww', 'hh', 'step'])
+    
     def FindCircle(self):        
-        mat = np.asarray(self.hsv_frame[:, :], dtype=np.uint8)
         thres = np.uint8(self.hsv[0])
-        ww = self.strip_size[0]            
-        hh = self.strip_size[1]
+        ww = self.sample_size[0]            
+        hh = self.sample_size[1]
         thres_size = self.circle_thres
         label = self.label
         maxnumcl = self.maxnumcl
@@ -171,26 +159,21 @@ class Vision (multiprocessing.Process):
             print "save"
             cv.SaveImage(str(time.time())+"ww.jpg",self.small)
         """
-        #print lhmin[:7],lhmax[:7],lwmin[:7],lwmax[:7]
-        #print "hooo",self.circles.height        
         
     def FindWall(self):
         #threshold+rowsum+findRect
-        mat = np.asarray(self.hsv_frame[:, :], dtype=np.uint8)
+        mat = self.hsv_np
         thres = np.uint8(self.hsv[1])
-        ww = self.strip_size[0]            
-        hh = self.strip_size[1]
+        ww = self.sample_size[0]            
+        hh = self.sample_size[1]
         w_thres = self.width_thres
         h_thres = self.height_thres
         s_p = [-1, -1]
         e_p = [-1, -1]
         maxlen = np.zeros(2, int)        
-        #maxlen=[0]*hh
- 
-        #print ww,hh,thres,w_thres,h_thres     
-        weave.inline(self.codewall, ['mat', 'thres', 'w_thres', 'h_thres', 'ww', 'hh', 's_p', 'e_p', 'maxlen'])
+        step=self.step
+        weave.inline(self.codewall, ['mat', 'thres', 'w_thres', 'h_thres', 'ww', 'hh', 's_p', 'e_p', 'maxlen','step'])
         #weave.inline(code, ['mat','thres','ww','hh','s_p','e_p','maxlen'])
-        #print "wall",maxlen,self.height_thres
         if maxlen[1] >= self.height_thres:
             self.wall = (s_p[1], e_p[1])
             self.target = 1
@@ -202,8 +185,8 @@ class Vision (multiprocessing.Process):
         #threshold+rowsum+findRect
         mat = np.asarray(self.hsv_frame[:, :], dtype=np.uint8)
         thres = np.uint8(self.hsv[2])
-        ww = self.strip_size[0]            
-        hh = self.strip_size[1]
+        ww = self.sample_size[0]            
+        hh = self.sample_size[1]
         b_thres = self.blue_thres
         blueline = self.blueline
         weave.inline(self.codeline, ['mat', 'thres', 'b_thres', 'ww', 'hh', 'blueline'])
@@ -213,10 +196,11 @@ class Vision (multiprocessing.Process):
         mat = np.asarray(self.small[:, :], dtype=np.uint8)
         mat2 = np.asarray(self.presmall[:, :], dtype=np.uint8)
         thres = self.same_thres
-        ww = self.strip_size[0]            
-        hh = self.strip_size[1]
+        ww = self.sample_size[0]            
+        hh = self.sample_size[1]
         diffcount = self.diff_count
-        weave.inline(self.codestuck, ['mat', 'mat2','thres',  'ww', 'hh', 'diffcount'])
+        step=self.camsize[0]/ww        
+        weave.inline(self.codestuck, ['mat', 'mat2','thres',  'ww', 'hh', 'diffcount','step'])
         #print self.diff_count[0],self.stuck_thres
         if self.diff_count[0] < self.stuck_thres:
             self.stuck_acc+=1
@@ -243,101 +227,47 @@ class Vision (multiprocessing.Process):
                 self.numobj = i
         elif self.state == 'y' and self.wall != []:
             self.numobj = 1
-            cv.Rectangle(self.small, (0, self.wall[0]), (self.strip_size[0], self.wall[1]), (0, 0, 255), 5)
+            cv.Rectangle(self.small, (0, self.wall[0]), (self.sample_size[0], self.wall[1]), (0, 0, 255), 5)
         else:
             #blue line
-            for i in range(self.strip_size[0]):
+            for i in range(self.sample_size[0]):
                 cv.Set2D(self.small, self.blueline[i], i, (0,0,0,0)); 
                 if self.blueline[i] > self.blue_thres:
                     cv.Set2D(self.small, self.blueline[i] - self.blue_thres, i, (0,0,0,0)) 
                     self.numobj = 1
-    def Init_Binary(self):
-        self.thresholded = cv.CreateImage(self.strip_size, cv.IPL_DEPTH_8U, 1)
-        self.thresholded2 = cv.CreateImage(self.strip_size, cv.IPL_DEPTH_8U, 1)
 
-    def FindWall_bk(self, state):        
+    # for calibration display
+    def setThres(self):  
+        self.r0min = cv.Scalar(self.hsv[0][0], self.hsv[0][1], self.hsv[0][2], 0)
+        self.r0max = cv.Scalar(self.hsv[0][3], self.hsv[0][4], self.hsv[0][5], 0)
+        
+        self.r1min = cv.Scalar(self.hsv[0][6], self.hsv[0][7], self.hsv[0][8], 0)
+        self.r1max = cv.Scalar(self.hsv[0][9], self.hsv[0][10], self.hsv[0][11], 0)
+        
+        self.y0min = cv.Scalar(self.hsv[1][0], self.hsv[1][1], self.hsv[1][2], 0)        
+        self.y0max = cv.Scalar(self.hsv[1][3], self.hsv[1][4], self.hsv[1][5], 0)
+        
+        self.b0min = cv.Scalar(self.hsv[2][0], self.hsv[2][1], self.hsv[2][2], 0)
+        self.b0max = cv.Scalar(self.hsv[2][3], self.hsv[2][4], self.hsv[2][5], 0)            
+
+
+    def Init_Binary(self):
+        self.thresholded = cv.CreateImage(self.sample_size, cv.IPL_DEPTH_8U, 1)
+        self.thresholded2 = cv.CreateImage(self.sample_size, cv.IPL_DEPTH_8U, 1)
+
+    def ThresWall(self, state):        
         #need to process the latest one        
         if state == 'y':
             cv.InRangeS(self.hsv_frame, self.y0min, self.y0max, self.thresholded)
         else:
             cv.InRangeS(self.hsv_frame, self.b0min, self.b0max, self.thresholded)
-        """
-        #cv.SaveImage("hh.jpg",self.thresholded)
-        #cv.Resize(self.hsv_frame, self.small)
-        #cv.SaveImage("gg.jpg",self.hsv_frame)
-                    
-        # simple horizontal prejoction
-        #cv.Reduce(self.thresholded,self.rowsum, 1, cv.CV_REDUCE_SUM);
-        self.rowsum=np.sum(np.asarray(self.thresholded[:,:],dtype=np.uint8),axis=1)
-        #dd=np.asarray(self.thresholded[:,:],dtype=np.int16)
-        #cv.SaveImage("gg.jpg",self.thresholded)
-        #print dd
-        #print self.rowsum
-        s_p=[-1,-1]
-        e_p=[-1,-1]
-        maxlen=[0,0]
-        kill=0
-        for i in range(self.strip_size[1]):
-            if self.rowsum[i]>self.width_thres*255:                    
-                if s_p[0]==-1:
-                    s_p[0]=i 
-                    kill=0
-                elif kill==0:
-                    e_p[0]=i
-                    maxlen[0]+=1
-            else:
-                kill=1
-                if maxlen[0]!=0:
-                    #end of the line
-                    if maxlen[0]>maxlen[1]:
-                        maxlen[1]=maxlen[0]
-                        s_p[1]=s_p[0]
-                        e_p[1]=e_p[0]
-                    else:
-                        maxlen[0]=0
-                        s_p[0]=-1
-                        e_p[0]=-1
-        print maxlen,s_p,e_p
-        if maxlen[1]>=self.height_thres:
-            self.wall=(s_p[1],e_p[1])
-            self.target=1
-            #self.display()
-            #cv.SaveImage("ha.jpg",self.frame)
-        else:
-            self.wall= []
-            self.target=0
-        #print self.target
-        """
 
-    def FindCircle_bk(self):        
+    def ThresCircle(self):        
         #if self.frame is not None :
         cv.InRangeS(self.hsv_frame, self.r0min, self.r0max, self.thresholded)
         cv.InRangeS(self.hsv_frame, self.r1min, self.r1max, self.thresholded2)
         cv.Or(self.thresholded, self.thresholded2, self.thresholded)                                           
-        # pre-smoothing improves Hough detector
-        """
-            cv.Smooth(self.thresholded, self.thresholded, cv.CV_GAUSSIAN, 9, 9)
-            self.circles = cv.CreateMat(self.strip_size[0], 1, cv.CV_32FC3)            
-            cv.HoughCircles(self.thresholded, self.circles, cv.CV_HOUGH_GRADIENT, 2, self.thresholded.height / 4, 100, 40, 20, 200)            
-            self.target=self.circles.height
-        """
  
-    def display_bk(self):
-        self.numobj = 0
-        if self.state == 'r' and self.circles != None:
-            self.numobj = self.circles.height
-            if self.circles.height != 0:    
-                for i in xrange(self.circles.height):
-                    circle = self.circles[i, 0]
-                    radius = int(circle[2])
-                    center = (int(circle[0]), int(circle[1]))
-                    #print self.circles.height,center
-                    cv.Circle(self.frame, center, radius, (0, 0, 255), 3, 8, 0)
-        elif self.state == 'y' or self.state == 'b':
-            if self.wall != []:
-                self.numobj = 1
-                #cv.Rectangle(self.frame,(self.wall[0],0),(self.wall[1],self.strip_size[0]),(0, 0, 255),5)#rotate
-                cv.Rectangle(self.frame, (0, self.wall[0]), (self.strip_size[0], self.wall[1]), (0, 0, 255), 5)#rotate
 
     def GenCode(self):            
         #input:['mat', 'thres', 'ww', 'hh', 'label', 'count', 'labeltable', 'lhmin', 'lhmax', 'lwmin', 'lwmax', 'maxnumcl', 'thres_size', 'circle', 'blueline']
@@ -358,15 +288,6 @@ connectedness:
 8:  a connects to b, c, d, and e
 */
 
-/*
-   for( int i = 0; i < 5; i++ )     {    
-   printf("%d,",aa[i]);
-   }   
-   memset(aa,0,sizeof(ushort)*5);   
-   for( int i = 0; i < 5; i++ )     {    
-   printf("%d,",aa[i]);
-   }
-*/
     memset(label,0,sizeof(ushort)*hh*ww);
     memset(count,0,sizeof(ushort)*maxnumcl[0]);
     memset(labeltable,0,sizeof(ushort)*maxnumcl[0]);
@@ -396,7 +317,6 @@ connectedness:
                  )                  
                  )              
                  
-                /* if (mat[hindex+windex]>0)*/
             {                
            //printf("%d,%d,%d,%d,%d,%d,%d,%d,%d \\n",i,j,(int)windex/3,mat[hindex+windex],mat[hindex+windex+1],mat[hindex+windex+2],mat2[hindex+windex],mat2[hindex+windex+1],mat2[hindex+windex+2]);
            //printf("%d,%d,%d,%d \\n",i,j,windex,mat[hindex+windex]);
@@ -515,7 +435,7 @@ connectedness:
         '''        
         #input:['mat', 'thres', 'w_thres', 'h_thres', 'ww', 'hh', 's_p', 'e_p', 'maxlen']
         self.codewall = '''
-        int kill=0,rowsum=0,hindex=0,windex=0;
+        int kill=0,rowsum=0,hindex=0,windex=0,hstep=3*ww*step,wstep=3*step;
         for (int i=0; i<hh; ++i){/*each height*/
              rowsum=0;
              windex=0;
@@ -525,9 +445,9 @@ connectedness:
                  && mat[hindex+windex+2]>=thres[2] && mat[hindex+windex+2]<=thres[5]){
                      rowsum+=1;
                  }
-             windex+=3;
+             windex+=wstep;
              }
-             hindex+=ww*3;             
+             hindex+=h_step;             
              //printf("%d,%d,%f\\n",i,rowsum,w_thres);     
              if (rowsum>=w_thres){                    
                 if (s_p[0]==-1){
@@ -575,16 +495,18 @@ connectedness:
         windex+=3;             
          }             
             '''    
-        #input:['mat', 'mat2','thres',  'ww', 'hh', 'diffcount']        
+        #input:['mat', 'mat2','thres',  'ww', 'hh', 'diffcount','step']        #mat2 is smaller
         self.codestuck = '''        
-        int hindex=0,windex=0,hstep=3*ww;        
+        int hindex=0,windex=0,hstep=3*ww,tmp1,tmp2;        
         diffcount[0]   =0;
         for (int i=0; i<hh; ++i){/*each height*/                     
-        for (int j=0; j<ww; ++j){/*each width*/
 	    windex=0;    
-        if(  abs(mat[hindex+windex]-mat2[hindex+windex])>thres 
-          || abs(mat[hindex+windex+1]-mat2[hindex+windex+1])>thres
-          || abs(mat[hindex+windex+2]-mat2[hindex+windex+2])>thres
+        for (int j=0; j<ww; ++j){/*each width*/
+        tmp2=hindex+windex;
+        tmp1=tmp1*step
+        if(  abs(mat[tmp1]-mat2[tmp2])>thres 
+          || abs(mat[tmp1+1]-mat2[tmp2+1])>thres
+          || abs(mat[tmp1+2]-mat2[tmp2+2])>thres
            ){
                      diffcount[0]+=1;
                     }
@@ -593,4 +515,22 @@ connectedness:
          hindex+=hstep;        
          }         
          //printf("total diff:%d\\n",diffcount[0]);    
-            '''    
+            '''
+        #input:['mat', 'mat2', 'ww', 'hh','step' ]        downsample from mat to mat2
+        self.codecopy = '''        
+        int hindex=0,windex=0,hstep2=3*ww,tmp1,tmp2;        
+        diffcount[0]   =0;
+        for (int i=0; i<hh; ++i){/*each height*/                     
+	    windex=0;    
+        for (int j=0; j<ww; ++j){/*each width*/
+        tmp2=hindex+windex;
+        tmp1=tmp1*step
+           mat2[tmp2]=mat[tmp1];
+           mat2[tmp2+1]=mat[tmp1+1];
+           mat2[tmp2+2]=mat[tmp1+2];
+        windex+=3;
+             }
+         hindex+=hstep;        
+         }         
+            '''
+            

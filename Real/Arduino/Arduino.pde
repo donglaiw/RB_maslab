@@ -5,7 +5,10 @@
 #define rxPin 19
 #define txPin 18
 #define rstPin 5
-#define servoChar 'S'
+
+#define NAVIGATION 'N'
+#define COMMAND 'C'
+#define SERVO 'S'
 #define analogChar 'A'
 #define motorChar 'M'
 #define digitalChar 'D'
@@ -14,6 +17,9 @@
 Servo servo;
 NewSoftSerial mySerial = NewSoftSerial(rxPin, txPin);
 CompactQik2s9v1 motor = CompactQik2s9v1(&mySerial, rstPin);
+int State=0;
+
+
 
 void setup()                    
 {

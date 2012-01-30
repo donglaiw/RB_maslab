@@ -80,15 +80,15 @@ class Calibrate():
         cv.CvtColor(self.vision.small, self.vision.hsv_frame, cv.CV_BGR2HSV)        
         if self.cali_type.get()==0:
             #red ball
-            self.vision.FindCircle_bk()
+            self.vision.ThresCircle()
             self.vision.FindCircle()
         elif self.cali_type.get()==1:
             #yellow wall
-            self.vision.FindWall_bk('y')
+            self.vision.ThresWall('y')
             self.vision.FindWall()
         else:
             #blue line
-            self.vision.FindWall_bk('b')
+            self.vision.ThresWall('b')
             self.vision.FindLine()
             
         self.vision.state=self.state[self.cali_type.get()]
