@@ -30,11 +30,11 @@ CompactQik2s9v1 motor = CompactQik2s9v1(&mySerial, rstPin);
 
 int IR[4][2]= {{0,0},{0,0},{0,0},{0,0}}; //0:old val, 1: new val
 int prestate=-1,state=-1;
-int fb=0,fb_c=0,fb_thres=5;
+int fb=0,fb_c=0,fb_thres=10;
 int rd=0,rd_c=0,rd_thres=5;
 int diff_thres=50; //simple filter out ir outlier
 
-char Gstate=0;
+char Gstate='N';
 
 
 void setup() {
@@ -47,6 +47,7 @@ void setup() {
     motor.stopBothMotors();
 
     servo.attach(7);
+    goStraight(120);
     }
 
 void serialEvent() {
@@ -55,12 +56,12 @@ void serialEvent() {
     }
 
 
-
 void loop() {
+  /*
     switch(Gstate) {
         case 'N':
             //Navigation
-            FollowRightWall();
+            Navigation();
             break;
         case 'T':
             //Turn a small angle left
@@ -96,6 +97,7 @@ void loop() {
 			//Get Out of Stuck
             break;
         }
+*/
     /*
      int val=getIr(F_IR);
      Serial.print("short:");
@@ -122,7 +124,6 @@ void loop() {
 //     }else{
 //FollowRightWall();
 
-
     /*
     //test throw ball
     if( uu==0){
@@ -134,6 +135,108 @@ void loop() {
 
     */
     }
+
+void Navigation(){
+     FrontBlock();
+     RightDisappear();
+	if (fb==1){
+        if(rd==1){
+		//go into the new era
+   	//goTurn60(-1);
+        setMotor(80,120);
+        delay(800);
+      	setMotor(120,-100);
+        delay(1500);
+          }else{
+	goTurn60(-1);
+
+	}
+    }else{
+        if(rd==1){
+       //go into the new era
+        setMotor(80,120);
+        delay(800);
+      	setMotor(120,-100);
+        delay(1500);
+	}else{
+   	FollowRightWall();
+		}
+   }
+}
+
+//Rule 3
+void RightDisappear() {
+    int val=getIr(R_IR);
+    if(val<100) {
+        rd_c+=1;
+        if(rd_c>rd_thres) {
+            rd_c=0;
+            rd=1;
+            }
+        }
+    else {
+        rd=0;
+        rd_c=0;
+        }
+    }
+//Rule 2
+void FrontBlock() {
+    int val2=getIr(F_IR);
+    int val3=getIr(S_IR);
+    if(val2 > 500||(val3>500)) {
+        fb_c+=1;
+        if(fb_c>fb_thres) {
+            fb_c=0;
+            fb=1;
+            }
+        }
+    else {
+        fb=0;
+        fb_c=0;
+        }
+    }
+
+//Rule 1
+void FollowRightWall() {
+    int val=getIr(R_IR);
+    //right wall disappear
+        //400-500 is ideal
+        if(val >550) {
+            // if we are way too close, turn away fast
+            state=0;
+            }
+        else if(val >450) {
+            // if we are too close, drift away
+            state=1;
+            }
+        else if(val < 250) {
+            // too far away, turn towards wall and go straight
+            state=2;
+            }
+        else if(val<350) {
+            // default, drift towards wall
+            state=3;
+            }
+
+    if (state!=prestate) {
+        prestate=state;
+        switch (state) {
+            case 0:
+                setMotor(80,120);
+                break;
+            case 1:
+                setMotor(100,120);
+                break;
+            case 2:
+                setMotor(120,100);
+                break;
+            case 3:
+                setMotor(120,80);
+                break;
+            }
+        }
+    }
+
 void DumpBall() {
     servo.write(160);
     delay(2000);
@@ -182,105 +285,6 @@ void AlignWall() {
 
     }
 
-void FindWall() {
-    int a=1;
-    }
-void Navigation(){
-
-     FrontBlock();
-     RightDisappear();
-
-	if (fb==1){
-        if(rd==1){
-    		//go into the new era
-	    	goTurn90(1);
-          }else{
-			goTurn90(-1);
-		}
-    }else{
-        if(rd==1){
-    		//go into the new era
-	    	goTurn90(1);
-		}else{
-   			FollowRightWall();
-		}
-   }
-}
-
-//Rule 3
-void RightDisappear() {
-    int val=getIr(R_IR);
-    if(val<100) {
-        rd_c+=1;
-        if(rd_c>rd_thres) {
-            rd_c=0;
-            rd=1;
-            }
-        }
-    else {
-        rd=0;
-        rd_c=0;
-        }
-    }
-//Rule 2
-void FrontBlock() {
-    int val2=getIr(F_IR);
-    int val3=getIr(S_IR);
-    if(val2 > 400||(val3>400)) {
-        fb_c+=1;
-        if(fb_c>fb_thres) {
-            fb_c=0;
-            fb=1;
-            }
-        }
-    else {
-        fb=0;
-        fb_c=0;
-        }
-    }
-
-//Rule 1
-void FollowRightWall() {
-    int val=getIr(R_IR);
-    //right wall disappear
-        //400-500 is ideal
-        if(val >600) {
-            // if we are way too close, turn away fast
-            state=0;
-            }
-        else if(val >500) {
-            // if we are too close, drift away
-            state=1;
-            }
-        else if(val < 300) {
-            // too far away, turn towards wall and go straight
-            state=2;
-            }
-        else if(val<400) {
-            // default, drift towards wall
-            state=3;
-            }
-        }
-
-    if (state!=prestate) {
-        prestate=state;
-        switch (state) {
-            case 0:
-                setMotor(60,120);
-                break;
-            case 1:
-                setMotor(100,120);
-                break;
-            case 2:
-                setMotor(120,60);
-                break;
-            case 3:
-                setMotor(120,100);
-                break;
-            }
-        }
-    }
-
 void setMotor(int sp0,int sp1) {
     if (sp0>0) {
         motor.motor0Forward(sp0);
@@ -300,6 +304,12 @@ void goTurn90(int dir) {
     setMotor(100*dir,-100*dir);
     delay(800);
     setMotor(0,0);
+    }
+
+void goTurn60(int dir) {
+    setMotor(100*dir,-100*dir);
+    delay(600);
+    setMotor(100,100);
     }
 
 //1: turn right
@@ -342,14 +352,14 @@ int getIr(int port) {
 
 //---------------
 void getAnalog() {
-    int port = getData(2);
+    int port = 1;//getData(2);
     int analogData = analogRead(port);
     Serial.println(analogData);
     delay(10);
     }
 //---------------
 void getDigital() {
-    int port = getData(2);
+    int port = 1;//getData(2);
     int digitalData = digitalRead(port);
     Serial.println(digitalData);
     delay(10);
