@@ -46,7 +46,6 @@ void setup() {
     motor.begin();
     motor.stopBothMotors();
 
-    //servo.attach(7);
     
     }
 
@@ -113,28 +112,12 @@ void loop() {
     Serial.println(val);
     */
 
-//int bp=digitalRead(26);
-//Serial.println(bp);
-    /**/
-
-    //1. Check Front Block
-//      FrontBlock();
-    //2. follow straight wall on the right with right IR
-//      if(fb==1){
-//        goTurn90(-1);
-//       delay(100);
-//     }else{
-//FollowRightWall();
-
-    /*
+/*
     //test throw ball
-    if( uu==0){
       AlignWall();
       setMotor(120,120);
       delay(2000);
       DumpBall();
-    }
-
     */
     }
 
@@ -164,7 +147,28 @@ void Navigation(){
     }
    }
 }
+void goUturn(){
+//forward left
+setMotor(100,120);
+delay(400);
+//turn 90 right
+goTurn90(1);
+setMotor(120,100);
+delay(500);
+RightDisappear();
+if (rd==1){
+//still missing...
+goTurn90(1);
+setMotor(120,100);
+RightDisappear();
+FrontBlock();
+while(rd==1 && fb==0){
+RightDisappear();
+FrontBlock();
+}
+}
 
+}
 //Rule 3
 void RightDisappear() {
     int val=getIr(R_IR);
@@ -239,10 +243,13 @@ void FollowRightWall() {
     }
 
 void DumpBall() {
+    //don't want it on all time...
+    servo.attach(7);
     servo.write(160);
     delay(2000);
     servo.write(60);
     delay(10);
+    servo.detach();
     }
 
 void AlignWall() {
