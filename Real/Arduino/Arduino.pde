@@ -46,7 +46,6 @@ void setup() {
     motor.begin();
     motor.stopBothMotors();
 
-    
     }
 
 void serialEvent() {
@@ -56,8 +55,6 @@ void serialEvent() {
 
 
 void loop() {
-    
-
     switch(Gstate) {
         case 'N':
             //Navigation
@@ -98,7 +95,6 @@ void loop() {
           getOutStuck();
             break;
         }
-  /**/
     /*
      int val=getIr(F_IR);
      Serial.print("short:");
@@ -111,14 +107,6 @@ void loop() {
     Serial.print("long:");
     Serial.println(val);
     */
-
-/*
-    //test throw ball
-      AlignWall();
-      setMotor(120,120);
-      delay(2000);
-      DumpBall();
-    */
     }
 
 void Navigation(){
@@ -127,24 +115,30 @@ void Navigation(){
 	if (fb==1){
         if(rd==1){
       //go into the new era
+		goUturn();
+		//go into the new era
    	//goTurn60(-1);
-      	setMotor(120,-100);
-        delay(1000);
         setMotor(80,120);
-        delay(600);
-          }else{            
+        delay(800);
+      	setMotor(120,-100);
+        delay(1500);
+          }else{
 	goTurn60(-1);
 	}
     }else{
         if(rd==1){
        //go into the new era
-      	setMotor(120,-100);
-        delay(1000);
-        setMotor(80,120);
-        delay(600);
+		goUturn();
 	}else{
    	FollowRightWall();
     }
+        setMotor(80,120);
+        delay(800);
+      	setMotor(120,-100);
+        delay(1500);
+	}else{
+   	FollowRightWall();
+		}
    }
 }
 void goUturn(){
@@ -290,6 +284,9 @@ void AlignWall() {
         delay(800);
         setMotor(0,0);
         }
+      setMotor(120,120);
+
+      delay(2000);
 
     }
 
