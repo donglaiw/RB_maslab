@@ -34,7 +34,7 @@ int fb=0,fb_c=0,fb_thres=10;
 int rd=0,rd_c=0,rd_thres=5;
 int diff_thres=50; //simple filter out ir outlier
 
-char Gstate='';
+char Gstate=' ';
 
 
 void setup() {
