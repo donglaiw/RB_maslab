@@ -94,7 +94,7 @@ class Vision (multiprocessing.Process):
                 
                 if self.target>-1:
                     #2.2 check for obj
-                    self.FindCircle()
+                    #self.FindCircle()
                     self.FindWall()                
                 #print "3: ",time.time()
             else:
@@ -182,6 +182,7 @@ class Vision (multiprocessing.Process):
         if maxlen[1] >= self.height_thres:
             self.wall = (s_p[1], e_p[1])
             self.target = e_p[0]
+            print "wall found!!!!!!!!!!!"
         else:
             self.wall = []
             self.target = 0

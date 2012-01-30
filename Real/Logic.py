@@ -107,6 +107,7 @@ class Logic(multiprocessing.Process):
                 pass
             elif state>=2:
                 #detect yellow wall
+                print "dump...."
                 self.DumpBall(state)
             #elif state==0: keep moving
    
