@@ -4,6 +4,7 @@ from Tkinter import *
 import time
 from PIL import Image,ImageTk
 import cv
+import numpy as np
 class MaxLengthEntry(Entry):
     # base class for validating entry widgets
     def __init__(self, master, value="",maxlength=3, **kw):
@@ -75,9 +76,11 @@ class Calibrate():
         frameimg.pack()
        
     def displayImage(self):
-        self.vision.frame = cv.QueryFrame(self.vision.capture)        
-        cv.Resize(self.vision.frame, self.vision.small)        
-        cv.CvtColor(self.vision.small, self.vision.hsv_frame, cv.CV_BGR2HSV)        
+        #self.vision.frame = cv.QueryFrame(self.vision.capture)        
+        self.vision.frame = cv.LoadImage("test/img2/22.jpg")
+        cv.Resize(self.vision.frame, self.vision.sample)        
+        cv.CvtColor(self.vision.sample, self.vision.hsv_frame, cv.CV_BGR2HSV)       
+        self.vision.hsv_np= np.asarray(self.vision.hsv_frame[:, :], dtype=np.uint8)
         if self.cali_type.get()==0:
             #red ball
             self.vision.ThresCircle()
@@ -90,12 +93,16 @@ class Calibrate():
             #blue line
             self.vision.ThresWall('b')
             self.vision.FindLine()
-            
+        #cv.SaveImage("pp.jpg",self.vision.thresholded)
         self.vision.state=self.state[self.cali_type.get()]
         self.vision.display()
         if self.vision.frame!=None:
-            img_pil = Image.fromstring("RGB", self.vision.strip_size, self.vision.small.tostring())
-            img_pil2 = Image.fromstring("L", cv.GetSize(self.vision.thresholded), self.vision.thresholded.tostring())
+            if self.cali_type.get()==1:
+                img_pil = Image.fromstring("RGB", self.vision.small_size[:2], self.vision.small.tostring())
+                img_pil2 = Image.fromstring("L", cv.GetSize(self.vision.thresholded), self.vision.thresholded.tostring())
+            else:
+                img_pil = Image.fromstring("RGB", self.vision.sample_size, self.vision.sample.tostring())
+                img_pil2 = Image.fromstring("L", cv.GetSize(self.vision.thresholded), self.vision.thresholded.tostring())
             
             img_tk1=ImageTk.PhotoImage(img_pil)
             img_tk2=ImageTk.PhotoImage(img_pil2)

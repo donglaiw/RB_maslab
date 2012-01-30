@@ -22,7 +22,7 @@ class Control(multiprocessing.Process):
                     self.port.write(command)                                    
                 except:
                     print "write ard error"
-                #print "Roger "+command,time.time()
+                print "Roger "+command,time.time()
                 #Pause so the arduino can process                    
                 time.sleep(0.1)                    
                 #Read from arduino

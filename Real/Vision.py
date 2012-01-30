@@ -21,7 +21,6 @@ class Vision (multiprocessing.Process):
         cvSetCaptureProperty(self.capture, cv.CV_CAP_PROP_FRAME_HEIGHT,120);
         """
         self.frame=cv.QueryFrame(self.capture)
-        #self.frame = cv.LoadImage("../test/img/117.jpg")        
         #cv.SaveImage("hh.jpg",self.frame)                
         self.camsize = (640, 480)        
         self.sample_size = (160, 120)
@@ -38,7 +37,7 @@ class Vision (multiprocessing.Process):
         self.thresholded =None
         self.thresholded2 =None
 
-        self.circle_thres = self.sample_size[0] * self.sample_size[1] / 350
+        self.circle_thres = self.sample_size[0] * self.sample_size[1] / 700
         self.label = np.zeros(self.sample_size, np.uint16)
         self.maxnumcl = np.array([1000], np.uint16)
         self.count = np.zeros(self.maxnumcl[0], np.uint16)
@@ -54,8 +53,8 @@ class Vision (multiprocessing.Process):
               
         #3.2. yellow wall
         self.wall = []
-        self.width_thres = 0.7 * self.sample_size[0]
-        self.height_thres = 0.05 * self.sample_size[1]        
+        self.width_thres = 0.5 * self.small_size[0]
+        self.height_thres = 0.05 * self.small_size[1]        
         
         #5. for stuck
         self.small = np.zeros(self.small_size, np.uint8)
@@ -85,6 +84,7 @@ class Vision (multiprocessing.Process):
 
                 #2.1 check for stuck
                 self.CheckStuck()
+                self.Copy()
                 #print "2: ",time.time()
                 if self.stuck_acc >= self.stuck_acc_thres:
                     #if accumulates, send out the alarm to logic
@@ -96,7 +96,6 @@ class Vision (multiprocessing.Process):
                     #2.2 check for obj
                     self.FindCircle()
                     self.FindWall()                
-                self.Copy()
                 #print "3: ",time.time()
             else:
                 print "no img"
@@ -127,9 +126,10 @@ class Vision (multiprocessing.Process):
         ww = self.small_size[0]            
         hh = self.small_size[1]
         step=self.step
-        weave.inline(self.codestuck, ['mat', 'mat2', 'ww', 'hh', 'step'])
+        weave.inline(self.codecopy, ['mat', 'mat2', 'ww', 'hh', 'step'])
     
     def FindCircle(self):        
+        mat=self.hsv_np
         thres = np.uint8(self.hsv[0])
         ww = self.sample_size[0]            
         hh = self.sample_size[1]
@@ -143,13 +143,18 @@ class Vision (multiprocessing.Process):
         lwmin = self.lwmin
         lwmax = self.lwmax
         circle = self.circles      
+        #blue line filtering
+        self.FindLine()
         blueline = self.blueline  
         #print "wawa",self.maxnumcl
         weave.inline(self.codecircle, ['mat', 'thres', 'ww', 'hh', 'label', 'count', 'labeltable', 'lhmin', 'lhmax', 'lwmin', 'lwmax', 'maxnumcl', 'thres_size', 'circle', 'blueline'])
         #print "haha",self.maxnumcl
         #self.circle = circle
         #self.maxnumcl = maxnumcl
-        #print maxnumcl,[e for e in count if e>10]        
+        print [e for e in count if e>10]        
+        #print count
+        #print circle[0],circle[1]
+        #print self.circles[0],self.circles[1]
         self.target = self.circles[0]                
         """
         if self.target>0:
@@ -162,7 +167,7 @@ class Vision (multiprocessing.Process):
         
     def FindWall(self):
         #threshold+rowsum+findRect
-        mat = self.hsv_np
+        mat = self.small
         thres = np.uint8(self.hsv[1])
         ww = self.sample_size[0]            
         hh = self.sample_size[1]
@@ -171,19 +176,19 @@ class Vision (multiprocessing.Process):
         s_p = [-1, -1]
         e_p = [-1, -1]
         maxlen = np.zeros(2, int)        
-        step=self.step
-        weave.inline(self.codewall, ['mat', 'thres', 'w_thres', 'h_thres', 'ww', 'hh', 's_p', 'e_p', 'maxlen','step'])
-        #weave.inline(code, ['mat','thres','ww','hh','s_p','e_p','maxlen'])
+        #print thres,mat[0]
+        weave.inline(self.codewall, ['mat', 'thres', 'w_thres', 'h_thres', 'ww', 'hh', 's_p', 'e_p', 'maxlen'])
+        print maxlen ,self.height_thres
         if maxlen[1] >= self.height_thres:
             self.wall = (s_p[1], e_p[1])
-            self.target = 1
+            self.target = e_p[0]
         else:
             self.wall = []
             self.target = 0
             
     def FindLine(self):
         #threshold+rowsum+findRect
-        mat = np.asarray(self.hsv_frame[:, :], dtype=np.uint8)
+        mat = self.hsv_np
         thres = np.uint8(self.hsv[2])
         ww = self.sample_size[0]            
         hh = self.sample_size[1]
@@ -204,11 +209,9 @@ class Vision (multiprocessing.Process):
         #print self.diff_count[0],self.stuck_thres
         if self.diff_count[0] < self.stuck_thres:
             self.stuck_acc+=1
-            #self.target = -1 
             #print self.stuck_acc
         else:
             self.stuck_acc = 0
-            #self.target = 0
         #print self.diff_count[0],self.stuck_thres
         
     def display(self):
@@ -223,17 +226,17 @@ class Vision (multiprocessing.Process):
                         break; 
                     center = (int(self.circles[i * 3]), int(self.circles[i * 3 + 1]))
                     #print self.circles.height,center
-                    cv.Circle(self.small, center, radius, (0, 0, 255), 3, 8, 0)
+                    cv.Circle(self.sample, center, radius, (0, 0, 255), 3, 8, 0)
                 self.numobj = i
         elif self.state == 'y' and self.wall != []:
             self.numobj = 1
-            cv.Rectangle(self.small, (0, self.wall[0]), (self.sample_size[0], self.wall[1]), (0, 0, 255), 5)
+            cv.Rectangle(self.small, (0, self.wall[0]), (self.small_size[0], self.wall[1]), (0, 0, 255), 5)
         else:
             #blue line
             for i in range(self.sample_size[0]):
-                cv.Set2D(self.small, self.blueline[i], i, (0,0,0,0)); 
+                cv.Set2D(self.sample, self.blueline[i], i, (0,0,0,0)); 
                 if self.blueline[i] > self.blue_thres:
-                    cv.Set2D(self.small, self.blueline[i] - self.blue_thres, i, (0,0,0,0)) 
+                    cv.Set2D(self.sample, self.blueline[i] - self.blue_thres, i, (0,0,0,0)) 
                     self.numobj = 1
 
     # for calibration display
@@ -428,26 +431,28 @@ connectedness:
         circle[hindex2*3+2]=hindex>windex?hindex:windex;
         hindex2++;
         }
+        printf("c:%d,%d,%d,%d,%d\\n",thres_size,hindex2,circle[hindex2*3+1],circle[hindex2*3],circle[hindex2*3+1+2]);
         }        
     }
     //end criteria of the circles
     circle[hindex2*3]=0;
         '''        
-        #input:['mat', 'thres', 'w_thres', 'h_thres', 'ww', 'hh', 's_p', 'e_p', 'maxlen']
+        #input:['mat', 'thres', 'w_thres', 'h_thres', 'ww', 'hh', 's_p', 'e_p', 'maxlen','step']
         self.codewall = '''
-        int kill=0,rowsum=0,hindex=0,windex=0,hstep=3*ww*step,wstep=3*step;
+        int kill=0,rowsum=0,hindex=0,windex=0,hstep=3*ww;
         for (int i=0; i<hh; ++i){/*each height*/
              rowsum=0;
              windex=0;
+             //printf("ww %d,%d\\n",mat[0],thres[0]);
              for (int j=0; j<ww; ++j){/*each width*/
                  if(mat[hindex+windex]>=thres[0] && mat[hindex+windex]<=thres[3] 
                  && mat[hindex+windex+1]>=thres[1] && mat[hindex+windex+1]<=thres[4]
                  && mat[hindex+windex+2]>=thres[2] && mat[hindex+windex+2]<=thres[5]){
                      rowsum+=1;
                  }
-             windex+=wstep;
+             windex+=3;
              }
-             hindex+=h_step;             
+             hindex+=hstep;             
              //printf("%d,%d,%f\\n",i,rowsum,w_thres);     
              if (rowsum>=w_thres){                    
                 if (s_p[0]==-1){
@@ -472,6 +477,44 @@ connectedness:
                 }
             }
         }
+          // if wall found, is it in the center?
+         if(maxlen[1] >= h_thres){
+         int sl=0,sr=0,ss=s_p[1],ee=e_p[1];
+        for (int i=ss; i<=ee; ++i){/*each height*/
+             hindex=ww*i;
+             for (int j=0; j<ww/4; ++j){/*each width*/
+                 windex=j*3;
+                 if(mat[hindex+windex]>=thres[0] && mat[hindex+windex]<=thres[3] 
+                 && mat[hindex+windex+1]>=thres[1] && mat[hindex+windex+1]<=thres[4]
+                 && mat[hindex+windex+2]>=thres[2] && mat[hindex+windex+2]<=thres[5]){
+                     sl+=1;
+                 }
+             }
+             for (int j=(int)3*ww/4; j<ww; ++j){/*each width*/
+                 windex=j*3;
+                 if(mat[hindex+windex]>=thres[0] && mat[hindex+windex]<=thres[3] 
+                 && mat[hindex+windex+1]>=thres[1] && mat[hindex+windex+1]<=thres[4]
+                 && mat[hindex+windex+2]>=thres[2] && mat[hindex+windex+2]<=thres[5]){
+                     sr+=1;
+                 }
+            }
+         }
+         /*
+*/
+        if(sl>maxlen[1]*w_thres/4){
+            if(sr>maxlen[1]*w_thres/4){
+                e_p[0]=5;
+            }else{
+                e_p[0]=4;
+            }
+        }else{
+            if(sr>maxlen[1]*w_thres/4){
+                e_p[0]=6;
+            }else{
+                e_p[0]=5;
+            }        
+        }
+}
             '''    
         #input :['mat', 'thres', 'b_thres', 'ww', 'hh', 'blueline']
         self.codeline = '''        
@@ -518,13 +561,13 @@ connectedness:
             '''
         #input:['mat', 'mat2', 'ww', 'hh','step' ]        downsample from mat to mat2
         self.codecopy = '''        
-        int hindex=0,windex=0,hstep2=3*ww,tmp1,tmp2;        
-        diffcount[0]   =0;
+        int hindex=0,windex=0,hstep=3*ww,tmp1,tmp2;        
         for (int i=0; i<hh; ++i){/*each height*/                     
 	    windex=0;    
         for (int j=0; j<ww; ++j){/*each width*/
         tmp2=hindex+windex;
-        tmp1=tmp1*step
+        tmp1=tmp2*step;
+        //printf("%d,%d,%d\\n",tmp1,tmp2,step);
            mat2[tmp2]=mat[tmp1];
            mat2[tmp2+1]=mat[tmp1+1];
            mat2[tmp2+2]=mat[tmp1+2];

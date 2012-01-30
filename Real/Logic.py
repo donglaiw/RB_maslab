@@ -29,10 +29,13 @@ class Logic(multiprocessing.Process):
         self.control.start()
 
     def run(self):             
-        # stage 1: find yellow wall and dump balls 
+        # stage 1: find yellow wall and dump balls
+        while not self.SendState('c','N'):True
+        """
         while True:
             self.Nav2YellowWall()
             #self.GetBall()
+        """
 
     def Close(self):        
         self.control.close()
