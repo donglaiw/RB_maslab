@@ -145,21 +145,20 @@ void Navigation(){
         if(rd==1){
       //go into the new era
    	//goTurn60(-1);
+      	setMotor(120,-100);
+        delay(1000);
         setMotor(80,120);
         delay(600);
-      	setMotor(120,-100);
-        delay(1200);
-          }else{
-            
+          }else{            
 	goTurn60(-1);
 	}
     }else{
         if(rd==1){
        //go into the new era
+      	setMotor(120,-100);
+        delay(1000);
         setMotor(80,120);
         delay(600);
-      	setMotor(120,-100);
-        delay(1200);
 	}else{
    	FollowRightWall();
     }
