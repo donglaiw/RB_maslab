@@ -115,14 +115,8 @@ void Navigation(){
 	if (fb==1){
         if(rd==1){
       //go into the new era
-		goUturn();
-		//go into the new era
-   	//goTurn60(-1);
-        setMotor(80,120);
-        delay(800);
-      	setMotor(120,-100);
-        delay(1500);
-          }else{
+goUturn();
+      }else{
 	goTurn60(-1);
 	}
     }else{
@@ -131,14 +125,7 @@ void Navigation(){
 		goUturn();
 	}else{
    	FollowRightWall();
-    }
-        setMotor(80,120);
-        delay(800);
-      	setMotor(120,-100);
-        delay(1500);
-	}else{
-   	FollowRightWall();
-		}
+        }
    }
 }
 void goUturn(){
