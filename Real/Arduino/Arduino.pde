@@ -34,7 +34,7 @@ int fb=0,fb_c=0,fb_thres=10;
 int rd=0,rd_c=0,rd_thres=5;
 int diff_thres=50; //simple filter out ir outlier
 
-char Gstate=' ',tmp=' ';
+char Gstate=' ';
 
 
 void setup() {
@@ -45,8 +45,8 @@ void setup() {
     mySerial.begin(9600);
     motor.begin();
     motor.stopBothMotors();
-
-    }
+    
+     }
 
 
 void loop() {
@@ -77,52 +77,55 @@ void loop() {
         case 'A':
 			//Align Wall for throw ball
             AlignWall();
-          Serial.print("done AlignWall");            
+            //delay(5000);
+             Serial.println("d");            
+              delay(10);
             break;
         case 'B':
 	//Throw Ball
             DumpBall();
-    Serial.print("done DumpBall");            
+            Serial.println("d");            
+            delay(10);
+
             break;
         case 'W':
         //Get Switch
+            getSwitch();
             break;
         case 'K':
 		//Get Out of Stuck
           getOutStuck();
-              Serial.print("done GetOutStuck");            
+         Serial.println("d");            
+         delay(10);
 
             break;
-        }
+        case 'O':
+          analogWrite(9,0);
+          break;    
+        case 'o':
+          analogWrite(9,155);
+          break;
+           }
 
     /*
      int val=getIr(F_IR);
-     Serial.print("short:");
+     Serial.println("short:");
      Serial.println(val);
     */
 
 
     /*
     int val=getIr(R_IR);
-    Serial.print("long:");
+    Serial.println("long:");
     Serial.println(val);
     */
-if(Serial.available()){
-Gstate= (char)Serial.read();
+    if(Serial.available()){
+     Gstate= (char)Serial.read();
+    }
+      
 }
-      }
 
 
-void serialEvent() {
-    // get the new byte:
-/*
-    Gstate= (char)Serial.read();
-     Serial.println("ppp");    
-     Serial.println(Gstate);
-
-     Serial.println("ahaha");
-*/  
-  }
 
 void Navigation(){
      FrontBlock();
@@ -244,7 +247,7 @@ void DumpBall() {
     servo.write(160);
     delay(2000);
     servo.write(60);
-    delay(10);
+    delay(1000);
     servo.detach();
     }
 
@@ -360,9 +363,8 @@ void getAnalog() {
     delay(10);
     }
 //---------------
-void getDigital() {
-    int port = 1;//getData(2);
-    int digitalData = digitalRead(port);
+void getSwitch() {
+    int digitalData = digitalRead(10);
     Serial.println(digitalData);
     delay(10);
     }

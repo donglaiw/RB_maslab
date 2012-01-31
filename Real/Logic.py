@@ -21,7 +21,8 @@ class Logic(multiprocessing.Process):
         self.timeout_back=1.5
         self.timeout_new=2
         self.timeout_nav=180
-       
+        self.st=0; 
+        self.dump=0;
 
     def Connect(self):
         self.control.connect()
@@ -32,14 +33,19 @@ class Logic(multiprocessing.Process):
 
     def run(self):             
         # stage 1: find yellow wall and dump balls
-        #while not self.SendState('c',('N',Falise)):True
+        self.st=time.time()
+        #while not self.SendState('c',('N',False)):True
+        """
+        while True:
+            while not self.SendState('c',('A',True)):True
+        """
+        while not self.SendState('c',('o',False)):True
+        while not self.SendState('v',('c',False)):True
         while True:
             self.Nav2YellowWall()
             #self.GetBall()
-        """
-        """
-
-    def Close(self):        
+    def Close(self):       
+        while not self.SendState('c',('O',False)):True
         self.control.close()
         self.control.terminate()
         self.vision.terminate()
@@ -62,6 +68,7 @@ class Logic(multiprocessing.Process):
                 self.pipe_lv.send(msg)
             else:
                 sent=False
+            #print sent,msg
         else:
             #hard code the function without args
             """
@@ -76,6 +83,7 @@ class Logic(multiprocessing.Process):
             'B':Throw Ball
             'W':Get Switch
             'K':Get Out of Stuck
+            'O':stop ball roller
             """
             if not self.pipe_control.poll(0.05):
                 self.pipe_lc.send(msg)
@@ -90,29 +98,32 @@ class Logic(multiprocessing.Process):
             self.SendState('c',('W',True)) 
             while not self.pipe_lc.poll(0.1): True
             tmp=self.pipe_lc.recv()
+            #print "sss.",tmp
     
     def Nav2YellowWall(self):
         #start navigation
+        print "send Nav...."
         st=time.time()
-        while not self.SendState('c',('N',False)):True
         while time.time()-st<self.timeout_nav:
+            while not self.SendState('c',('N',False)):True
             #check vision
-            print "ask........"
-            while not self.SendState('v','?'):True
+            self.SendState('v','?')
             while not self.pipe_lv.poll(0.05):True
             state=self.pipe_lv.recv()
-            print state,"wooooooooooooooooo"
+            #print state,"popo",time.time()-self.st,self.dump,"woo"
             if state==-1:
                 #stuck
                 self.GetOutStuck()
-            elif state==1:
+                #pass
+            elif state>=1 and state<=3:
                 #detect red ball
                 #self.AlignBall()
                 pass
-            elif state>=2:
+            elif state>=4 and time.time()-self.st>140 and self.dump==0:
                 #detect yellow wall
                 print "dump...."
                 self.DumpBall(state)
+                self.dump=1
             #elif state==0: keep moving
    
 
@@ -142,25 +153,28 @@ class Logic(multiprocessing.Process):
 
     def DumpBall(self,state):
         #1. visually align the yellow wall after detected
-        self.AlignWall(state)
+        #self.AlignWall(state)
         #2. physically align the yellow wall
         while not self.SendState('c',('A',True)):True            
         while not self.pipe_lc.poll(0.05): True
-        tmp=self.pipe_lv.recv()
-        print  "aaaa"
+        tmp=self.pipe_lc.recv()
+        print  "aaaa",time.time()
         #3. visually check for special cases when bumpers fail
 
         #4. throw ball
         while not self.SendState('c',('B',True)):True
         while not self.pipe_lc.poll(0.05): True
-        tmp=self.pipe_lv.recv()
-        print  "bbb"
+        tmp=self.pipe_lc.recv()
+        print  "bbb",time.time()
 
         #5. get out of stuck 
+        self.GetOutStuck()
+
+    def GetOutStuck(self):
         while not self.SendState('c',('K',True)):True
         while not self.pipe_lc.poll(0.05): True
-        tmp=self.pipe_lv.recv()
-        print  "kkk"
+        tmp=self.pipe_lc.recv()
+        print  "kkk",time.time()
 
        
     def FindObj(self):         
@@ -224,12 +238,9 @@ if __name__ == "__main__":
 
     player=Logic()
     #Open Ardiuno connection
-    print "cc"
     player.Connect()
-    print "ahha"
     #Waiting for switch
     #player.SwitchOn()
-
     #GO!GO!!GO!!!
     player.start()     
     st=time.time()
@@ -238,4 +249,5 @@ if __name__ == "__main__":
 
     #Close Process and Ardiuno connection
     player.Close()     
-
+    """
+    """

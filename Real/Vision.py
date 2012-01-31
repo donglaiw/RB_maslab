@@ -14,7 +14,7 @@ class Vision (multiprocessing.Process):
         self.target = 0
 
         #2. image caputuring
-        self.capture = cv.CaptureFromCAM(1)
+        self.capture = cv.CaptureFromCAM(0)
         """
         #useless...
         cvSetCaptureProperty(self.capture, cv.CV_CAP_PROP_FRAME_WIDTH, 160);
@@ -54,31 +54,39 @@ class Vision (multiprocessing.Process):
               
         #3.2. yellow wall
         self.wall = []
-        self.width_thres = 0.5 * self.small_size[0]
+        self.width_thres = 0.7 * self.small_size[0]
         self.height_thres = 0.05 * self.small_size[1]        
         
         #5. for stuck
         self.small = np.zeros(self.small_size, np.uint8)
-        self.same_thres = 15
+        self.same_thres = 10
         self.diff_count = np.zeros(1, np.uint16)
-        self.stuck_thres = self.sample_size[0] * self.sample_size[1] / 100
+        self.stuck_thres = self.small_size[0] * self.small_size[1] / 100
         self.stuck_acc=0
-        self.stuck_acc_thres=6
+        self.stuck_acc_thres=10
         
         #6. set C-code
         self.GenCode()
               
     def run(self):
+        #self.frame = cv.QueryFrame(self.capture)
         while True:
             #1. check for logical communication
             if self.pipe_vision.poll(0.01):             
                 #command from logic
-                self.pipe_vision.send(self.target)
-                #print "sent",self.target
+                rec=self.pipe_vision.recv()             
+                #print "vision got sent",self.target,time.time()
+                if rec=='?':
+                    self.pipe_vision.send(self.target)
+                else:
+                    print "clear out"
+                    self.stuck_acc=0
+                    self.target=0
 
             #print "0: " ,time.time()
             #2. vision process
             self.frame = cv.QueryFrame(self.capture)
+            #print "111: " ,time.time()
             if self.frame!=None:
                 cv.Resize(self.frame,self.sample)
                 cv.CvtColor(self.sample, self.hsv_frame, cv.CV_BGR2HSV)
@@ -92,16 +100,16 @@ class Vision (multiprocessing.Process):
                     #if accumulates, send out the alarm to logic
                     self.target = -1
                     self.stuck_acc = self.stuck_acc_thres                                                
-                    #print "alarm ...........target"
-                
-                if self.target>-1:
+                    print "alarm ...........target"
+                else:
+                    self.target=0
                     #2.2 check for obj
                     #self.FindCircle()
                     self.FindWall()                
+                    #pass
                 #print "3: ",time.time()
             else:
                 print "no img"
-            
                 
     def loadHSV(self):
         a = open("0.cal")
@@ -201,13 +209,13 @@ class Vision (multiprocessing.Process):
         #print self.blueline
     
     def CheckStuck(self):          
-        mat = np.asarray(self.sample[:, :], dtype=np.uint8)
-        mat2 = np.asarray(self.small[:, :], dtype=np.uint8)
+        mat = self.hsv_np
+        mat2 = self.small
         thres = self.same_thres
         ww = self.small_size[0]            
         hh = self.small_size[1]
         diffcount = self.diff_count
-        step=self.camsize[0]/ww        
+        step=self.step        
         weave.inline(self.codestuck, ['mat', 'mat2','thres',  'ww', 'hh', 'diffcount','step'])
         #print self.diff_count[0],self.stuck_thres
         if self.diff_count[0] < self.stuck_thres:
@@ -215,7 +223,7 @@ class Vision (multiprocessing.Process):
             #print self.stuck_acc
         else:
             self.stuck_acc = 0
-        #print self.diff_count[0],self.stuck_thres
+        #print self.stuck_acc,time.time()
         
     def display(self):
         self.numobj = 0
@@ -439,7 +447,7 @@ connectedness:
         circle[hindex2*3+2]=hindex>windex?hindex:windex;
         hindex2++;
         }
-        printf("c:%d,%d,%d,%d,%d\\n",thres_size,hindex2,circle[hindex2*3+1],circle[hindex2*3],circle[hindex2*3+1+2]);
+        //printf("c:%d,%d,%d,%d,%d\\n",thres_size,hindex2,circle[hindex2*3+1],circle[hindex2*3],circle[hindex2*3+1+2]);
         }        
     }
     //end criteria of the circles
@@ -563,28 +571,30 @@ connectedness:
         for (int j=0; j<ww; ++j){/*each width*/
         tmp2=hindex+windex;
         tmp1=hindex*step*step+windex*step;
+        //printf("stuck: %d,%d,%d,%d,%d,%d,%d,%d\\n",tmp1,tmp2,mat[tmp1],mat[tmp1+1],mat[tmp1+2],mat2[tmp2],mat2[tmp2+1],mat2[tmp2+2]);
         if(  abs(mat[tmp1]-mat2[tmp2])>thres 
-          || abs(mat[tmp1+1]-mat2[tmp2+1])>thres
-          || abs(mat[tmp1+2]-mat2[tmp2+2])>thres
+          && abs(mat[tmp1+1]-mat2[tmp2+1])>thres
+        && abs(mat[tmp1+2]-mat2[tmp2+2])>thres
            ){
+
                      diffcount[0]+=1;
                     }
         windex+=3;
              }
          hindex+=hstep;        
          }         
-         //printf("total diff:%d\\n",diffcount[0]);    
+        // printf("total diff:%d\\n",diffcount[0]);    
             '''
         #input:['mat', 'mat2', 'ww', 'hh','step' ]        downsample from mat to mat2
         self.codecopy = '''        
         int hindex=0,windex=0,hstep=3*ww,tmp1,tmp2;        
-        printf("%d,%d,%d,%d\\n",step,ww,hh,hstep);
+        //printf("%d,%d,%d,%d\\n",step,ww,hh,hstep);
         for (int i=0; i<hh; ++i){/*each height*/                     
 	    windex=0;    
         for (int j=0; j<ww; ++j){/*each width*/
         tmp2=hindex+windex;
         tmp1=hindex*step*step+windex*step;
-        //printf("%d,%d,%d\\n",tmp1,tmp2,step);
+        //printf("copy: %d,%d,%d,%d,%d,%d,%d,%d\\n",tmp1,tmp2,mat[tmp1],mat[tmp1+1],mat[tmp1+2],mat2[tmp2],mat2[tmp2+1],mat2[tmp2+2]);
            mat2[tmp2]=mat[tmp1];
            mat2[tmp2+1]=mat[tmp1+1];
            mat2[tmp2+2]=mat[tmp1+2];
