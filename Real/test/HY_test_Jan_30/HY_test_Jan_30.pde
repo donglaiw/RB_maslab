@@ -61,12 +61,13 @@ void loop() {
 int AlignWall(){
   int val_l=analogRead(F_IR);
   int val_r=analogRead(S_IR);
-  while ((val_l<300) || (val_r<300)){
+  while ((val_l<300) && (val_r<300)){
     setMotor(120,120);
     val_l=analogRead(F_IR);
     val_r=analogRead(S_IR);
   }
-  delay(5000);
+  setMotor(0,0);
+  delay(100);
   int aligned=0;
   
   while (aligned==0){
@@ -84,7 +85,7 @@ int AlignWall(){
     aligned=1;
   }
   }
-  delay(5000);
+  delay(100);
   setMotor(120,120);
   delay(1000);
   setMotor(0,0);

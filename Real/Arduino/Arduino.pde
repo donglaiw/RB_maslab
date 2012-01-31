@@ -251,17 +251,18 @@ void DumpBall() {
     servo.detach();
     }
 
-int AlignWall() {
+int AlignWall(){
   int val_l=analogRead(F_IR);
   int val_r=analogRead(S_IR);
-  while ((val_l<300) || (val_r<300)){
+  while ((val_l<300) && (val_r<300)){
     setMotor(120,120);
     val_l=analogRead(F_IR);
     val_r=analogRead(S_IR);
   }
+  setMotor(0,0);
+  delay(100);
   int aligned=0;
-  delay(5000);
-
+  
   while (aligned==0){
     val_l=analogRead(F_IR);
     val_r=analogRead(S_IR);
@@ -277,14 +278,13 @@ int AlignWall() {
     aligned=1;
   }
   }
-  
+  delay(100);
   setMotor(120,120);
   delay(1000);
   setMotor(0,0);
   
   return aligned;
 }
-
 void getOutStuck(){
   setMotor(-100,-100);
   delay(400);
@@ -360,6 +360,6 @@ int getIr(int port) {
 void getSwitch() {
     int digitalData = digitalRead(22);
     Serial.println(digitalData);
-    delay(10);
+    delay(100);
     }
 

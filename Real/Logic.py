@@ -42,8 +42,9 @@ class Logic(multiprocessing.Process):
         while not self.SendState('c',('o',False)):True
         while not self.SendState('v',('c',False)):True
         while True:
-            self.Nav2YellowWall()
+            #self.Nav2YellowWall()
             #self.GetBall()
+            pass
     def Close(self):       
         while not self.SendState('c',('O',False)):True
         self.control.close()
@@ -93,7 +94,7 @@ class Logic(multiprocessing.Process):
         return sent
 
     #persistent: must sent out and must wait until the response received
-    def SendState2(self,option.msg):
+    def SendState2(self,option,msg):
         tmp=''
         if option=='c':             
             while not self.SendState('c',(msg,True)):True            
@@ -106,12 +107,12 @@ class Logic(multiprocessing.Process):
         return tmp
    
     def SwitchOn(self):        
-        tmp=1       
-        while tmp!=0:
+        tmp='1'       
+        while tmp!='0':
             self.SendState('c',('W',True)) 
             while not self.pipe_lc.poll(0.1): True
             tmp=self.pipe_lc.recv()
-            #print "sss.",tmp
+            print "sss.",tmp,len(tmp)
     
     def Nav2YellowWall(self):
         #start navigation
@@ -222,9 +223,10 @@ if __name__ == "__main__":
     #Open Ardiuno connection
     player.Connect()
     #Waiting for switch
-    #player.SwitchOn()
+    player.SwitchOn()
     #GO!GO!!GO!!!
-    player.start()     
+    print "wowow"
+    #player.start()     
     st=time.time()
     while time.time()-st<180:True
     print "exiting..."

@@ -14,7 +14,7 @@ class Vision (multiprocessing.Process):
         self.target = 0
 
         #2. image caputuring
-        self.capture = cv.CaptureFromCAM(0)
+        self.capture = cv.CaptureFromCAM(1)
         """
         #useless...
         cvSetCaptureProperty(self.capture, cv.CV_CAP_PROP_FRAME_WIDTH, 160);

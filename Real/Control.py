@@ -24,16 +24,16 @@ class Control(multiprocessing.Process):
                     self.port.write(command)                                    
                 except:
                     print "write ard error"
-                #print "Roger "+command,time.time()
+                print "Roger "+command,time.time()
                 #Pause so the arduino can process                    
                 #Read from arduino
                 if wait:
                     fromArd=''
-                    while len(fromArd) == 0 or (fromArd[0]!='d' and fromArd[0]!='0' and fromArd[0]!='1)':
+                    while len(fromArd) == 0 or (fromArd[0]!='d' and fromArd[0]!='0'):
                         fromArd = self.port.readline()
                     print "res ",fromArd,len(fromArd),fromArd[0],time.time()
                     self.port.flush()
-                    self.pipe_logic.send(fromArd)                                              
+                    self.pipe_logic.send(fromArd[0])                                              
                 #self.pipe_logic.flush()            
 
     def connect(self):
