@@ -19,17 +19,17 @@ class Control(multiprocessing.Process):
                 #Write Command
                 self.port.flush()
                 try:
-                    print command,"   wwwww"
                     self.port.write(command)                                    
                 except:
                     print "write ard error"
-                print "Roger "+command,time.time()
+                #print "Roger "+command,time.time()
                 #Pause so the arduino can process                    
-                time.sleep(0.1)                    
                 #Read from arduino
                 if wait:
-                    fromArd = self.port.readline()
-                    print fromArd," aa ",time.time()
+                    fromArd=''
+                    while len(fromArd) == 0 or fromArd[0]!='d':
+                        fromArd = self.port.readline()
+                    print "res ",fromArd,len(fromArd),fromArd[0],time.time()
                     self.port.flush()
                     self.pipe_logic.send(fromArd)                                              
                 #self.pipe_logic.flush()            

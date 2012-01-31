@@ -34,7 +34,7 @@ int fb=0,fb_c=0,fb_thres=10;
 int rd=0,rd_c=0,rd_thres=5;
 int diff_thres=50; //simple filter out ir outlier
 
-char Gstate=' ',tmp=' ';
+char Gstate=' ';
 
 
 void setup() {
@@ -45,8 +45,8 @@ void setup() {
     mySerial.begin(9600);
     motor.begin();
     motor.stopBothMotors();
-
-    }
+    
+     }
 
 
 void loop() {
@@ -77,52 +77,55 @@ void loop() {
         case 'A':
 			//Align Wall for throw ball
             AlignWall();
-          Serial.print("done AlignWall");            
+            //delay(5000);
+             Serial.println("d");            
+              delay(10);
             break;
         case 'B':
 	//Throw Ball
             DumpBall();
-    Serial.print("done DumpBall");            
+            Serial.println("d");            
+            delay(10);
+
             break;
         case 'W':
         //Get Switch
+            getSwitch();
             break;
         case 'K':
 		//Get Out of Stuck
           getOutStuck();
-              Serial.print("done GetOutStuck");            
+         Serial.println("d");            
+         delay(10);
 
             break;
-        }
+        case 'O':
+          analogWrite(9,0);
+          break;    
+        case 'o':
+          analogWrite(9,155);
+          break;
+           }
 
     /*
      int val=getIr(F_IR);
-     Serial.print("short:");
+     Serial.println("short:");
      Serial.println(val);
     */
 
 
     /*
     int val=getIr(R_IR);
-    Serial.print("long:");
+    Serial.println("long:");
     Serial.println(val);
     */
-if(Serial.available()){
-Gstate= (char)Serial.read();
+    if(Serial.available()){
+     Gstate= (char)Serial.read();
+    }
+      
 }
-      }
 
 
-void serialEvent() {
-    // get the new byte:
-/*
-    Gstate= (char)Serial.read();
-     Serial.println("ppp");    
-     Serial.println(Gstate);
-
-     Serial.println("ahaha");
-*/  
-  }
 
 void Navigation(){
      FrontBlock();
@@ -244,53 +247,42 @@ void DumpBall() {
     servo.write(160);
     delay(2000);
     servo.write(60);
-    delay(10);
+    delay(1000);
     servo.detach();
     }
 
-void AlignWall() {
-    int stuck=0;
+int AlignWall() {
+  int val_l=analogRead(F_IR);
+  int val_r=analogRead(S_IR);
+  while ((val_l<200) || (val_r<200)){
     setMotor(120,120);
-    int val_l=1;
-    int val_r=1;
-    while(stuck==0) {
-        val_l=digitalRead(26);
-        val_r=digitalRead(30);
+    val_l=analogRead(F_IR);
+    val_r=analogRead(S_IR);
+  }
+  int aligned=0;
+  
+  while (aligned==0){
+    val_l=analogRead(F_IR);
+    val_r=analogRead(S_IR);
 
-        if (val_l==0) {
-            stuck=1;
-            //Serial.print("left");
-            //Serial.println(val_l);
-            }
-        else if (val_r==0) {
-
-            //Serial.print("right");
-            //Serial.println(val_r);
-            stuck=1;
-            }
-
-        }
-
-    setMotor(0,0);
-    if (val_l==0) {
-        setMotor(-120,-120);
-        delay(200);
-        setMotor(-50,120);
-        delay(800);
-        setMotor(0,0);
-        }
-    else {
-        setMotor(-120,-120);
-        delay(200);
-        setMotor(120,-50);
-        delay(800);
-        setMotor(0,0);
-        }
-      setMotor(120,120);
-
-      delay(2000);
-
+  if (abs((val_l-val_r))>20){
+    if ((val_l-val_r)>0){
+      setMotor(-100,100);
+    }else {
+      setMotor(100,-100);
     }
+    }else{
+    setMotor(0,0);
+    aligned=1;
+  }
+  }
+  
+  setMotor(120,120);
+  delay(1000);
+  setMotor(0,0);
+  
+  return aligned;
+}
 
 void getOutStuck(){
   setMotor(-100,-100);
@@ -371,9 +363,8 @@ void getAnalog() {
     delay(10);
     }
 //---------------
-void getDigital() {
-    int port = 1;//getData(2);
-    int digitalData = digitalRead(port);
+void getSwitch() {
+    int digitalData = digitalRead(10);
     Serial.println(digitalData);
     delay(10);
     }
