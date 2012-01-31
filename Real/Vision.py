@@ -74,7 +74,7 @@ class Vision (multiprocessing.Process):
             if self.pipe_vision.poll(0.01):             
                 #command from logic
                 self.pipe_vision.send(self.target)
-                print "sent",self.target
+                #print "sent",self.target
 
             #print "0: " ,time.time()
             #2. vision process
@@ -184,7 +184,7 @@ class Vision (multiprocessing.Process):
         if maxlen[1] >= self.height_thres:
             self.wall = (s_p[1], e_p[1])
             self.target = e_p[0]
-            #print "wall found!!!!!!!!!!!",self.target
+            print "wall found!!!!!!!!!!!",self.target
         else:
             self.wall = []
             self.target = 0
@@ -205,7 +205,7 @@ class Vision (multiprocessing.Process):
         mat2 = np.asarray(self.small[:, :], dtype=np.uint8)
         thres = self.same_thres
         ww = self.small_size[0]            
-        hh = self.smal_size[1]
+        hh = self.small_size[1]
         diffcount = self.diff_count
         step=self.camsize[0]/ww        
         weave.inline(self.codestuck, ['mat', 'mat2','thres',  'ww', 'hh', 'diffcount','step'])
@@ -562,7 +562,7 @@ connectedness:
 	    windex=0;    
         for (int j=0; j<ww; ++j){/*each width*/
         tmp2=hindex+windex;
-        tmp1=tmp2*step;
+        tmp1=hindex*step*step+windex*step;
         if(  abs(mat[tmp1]-mat2[tmp2])>thres 
           || abs(mat[tmp1+1]-mat2[tmp2+1])>thres
           || abs(mat[tmp1+2]-mat2[tmp2+2])>thres

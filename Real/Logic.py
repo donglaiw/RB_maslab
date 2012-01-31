@@ -147,18 +147,20 @@ class Logic(multiprocessing.Process):
         while not self.SendState('c',('A',True)):True            
         while not self.pipe_lc.poll(0.05): True
         tmp=self.pipe_lv.recv()
-
+        print  "aaaa"
         #3. visually check for special cases when bumpers fail
 
         #4. throw ball
         while not self.SendState('c',('B',True)):True
         while not self.pipe_lc.poll(0.05): True
         tmp=self.pipe_lv.recv()
+        print  "bbb"
 
         #5. get out of stuck 
         while not self.SendState('c',('K',True)):True
         while not self.pipe_lc.poll(0.05): True
         tmp=self.pipe_lv.recv()
+        print  "kkk"
 
        
     def FindObj(self):         
