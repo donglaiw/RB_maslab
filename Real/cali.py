@@ -34,8 +34,8 @@ class MaxLengthEntry(Entry):
     def validate(self, value):
         if self.maxlength and value!='':
             #print value,value[:self.maxlength],[value[:self.maxlength],255],min([value[:self.maxlength],255]),max([0,min([value[:self.maxlength],255])])
-            print self.maxlength,value[:self.maxlength]
-            value = max([0,min([int(value[:self.maxlength]),255])])
+            #print self.maxlength,value[:self.maxlength]
+            value = max([0,min([int(value[:self.maxlength]),400])])
         return value
          
 class Calibrate():
@@ -77,10 +77,15 @@ class Calibrate():
        
     def displayImage(self):
         self.vision.frame = cv.QueryFrame(self.vision.capture)        
-        #self.vision.frame = cv.LoadImage("test/img2/22.jpg")
+        #self.vision.frame = cv.LoadImage("22.jpg")
         cv.Resize(self.vision.frame, self.vision.sample)        
         cv.CvtColor(self.vision.sample, self.vision.hsv_frame, cv.CV_BGR2HSV)       
         self.vision.hsv_np= np.asarray(self.vision.hsv_frame[:, :], dtype=np.uint8)
+        self.vision.Copy()
+        """
+        cv.SetData(self.vision.dis_small,self.vision.small.tostring())
+        cv.SaveImage("taa.jpg",self.vision.dis_small)
+        """
         if self.cali_type.get()==0:
             #red ball
             self.vision.ThresCircle()
@@ -98,7 +103,7 @@ class Calibrate():
         self.vision.display()
         if self.vision.frame!=None:
             if self.cali_type.get()==1:
-                img_pil = Image.fromstring("RGB", self.vision.small_size[:2], self.vision.small.tostring())
+                img_pil = Image.fromstring("RGB", self.vision.small_size[:2], self.vision.dis_small.tostring())
                 img_pil2 = Image.fromstring("L", cv.GetSize(self.vision.thresholded), self.vision.thresholded.tostring())
             else:
                 img_pil = Image.fromstring("RGB", self.vision.sample_size, self.vision.sample.tostring())
