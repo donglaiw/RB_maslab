@@ -38,7 +38,7 @@ class Vision (multiprocessing.Process):
         self.thresholded2 =None
         self.dis_small = None        
 
-        self.circle_thres = self.sample_size[0] * self.sample_size[1] / 700
+        self.circle_thres = self.sample_size[0] * self.sample_size[1] / 1500
         self.label = np.zeros(self.sample_size, np.uint16)
         self.maxnumcl = np.array([1000], np.uint16)
         self.count = np.zeros(self.maxnumcl[0], np.uint16)
@@ -162,7 +162,7 @@ class Vision (multiprocessing.Process):
         #print "haha",self.maxnumcl
         #self.circle = circle
         #self.maxnumcl = maxnumcl
-        #print [e for e in count if e>10]        
+        print [e for e in count if e>10],thres_size        
         #print count
         #print circle[0],circle[1]
         #print self.circles[0],self.circles[1]
@@ -449,13 +449,13 @@ connectedness:
         windex=lwmax[i]-lwmin[i]+1;
         //some shape constraint and in the middle range
         //if(hindex>5 && windex>5 && lwmin[i]+(int)windex/2>ww/4&& lwmin[i]+(int)windex/2<ww*3/4){
-        if(hindex>5 && windex>5){
+        if(hindex>3 && windex>3 && hindex<50 &&windex<50){
         circle[hindex2*3+1]=lhmin[i]+(int)hindex/2;
         circle[hindex2*3]=lwmin[i]+(int)windex/2;
         circle[hindex2*3+2]=hindex>windex?hindex:windex;
         hindex2++;
         }
-        //printf("c:%d,%d,%d,%d,%d\\n",thres_size,hindex2,circle[hindex2*3+1],circle[hindex2*3],circle[hindex2*3+1+2]);
+        //printf("c:%d,%d,%d,%d\\n",thres_size,hindex2,hindex,windex);
         }        
     }
     //end criteria of the circles
