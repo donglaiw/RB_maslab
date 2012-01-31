@@ -35,6 +35,7 @@ int rd=0,rd_c=0,rd_thres=5;
 int diff_thres=50; //simple filter out ir outlier
 
 char Gstate=' ';
+int ccc=0;
 
 
 void setup() {
@@ -45,40 +46,53 @@ void setup() {
     mySerial.begin(9600);
     motor.begin();
     motor.stopBothMotors();
-
-    }
+        }
 
 
 void loop() {
   //setMotor(100,100);
-  do {
-    AlignWall();
-  } while (AlignWall()==0);
-  //setMotor(120,120);
-  //delay(1000);
-  //setMotor(0,0);
+  
+  if (ccc==0){
+  AlignWall();
+  ccc=1;
+  }
 }
 
 int AlignWall(){
-  
   int val_l=analogRead(F_IR);
   int val_r=analogRead(S_IR);
-  Serial.println(val_l);
-  Serial.println(val_r);
-  
+  //Serial.print("left: ");
+  //Serial.println(val_l);
+  //Serial.print("right: ");
+  //Serial.println(val_r);
+  while ((val_l<200) || (val_r<200)){
+    setMotor(120,120);
+    val_l=analogRead(F_IR);
+    val_r=analogRead(S_IR);
+  }
+  Serial.println('done  '+val_r+'   '+val_l);    
   int aligned=0;
-  if (val_l>300 || val_r>300){
   
+  while (aligned==0){
+    val_l=analogRead(F_IR);
+    val_r=analogRead(S_IR);
+
   if (abs((val_l-val_r))>20){
-    if (val_l<val_r) {
-      setMotor(120,-120);
+    if ((val_l-val_r)>0){
+      setMotor(-100,100);
     }else {
-      setMotor(-120,120);
+      setMotor(100,-100);
     }
-  }else{
+    }else{
+    setMotor(0,0);
     aligned=1;
   }
   }
+  
+  setMotor(120,120);
+  delay(1000);
+  setMotor(0,0);
+  
   return aligned;
 }
 void serialEvent() {
