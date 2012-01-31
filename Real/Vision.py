@@ -205,7 +205,7 @@ class Vision (multiprocessing.Process):
         mat2 = np.asarray(self.small[:, :], dtype=np.uint8)
         thres = self.same_thres
         ww = self.small_size[0]            
-        hh = self.smal_size[1]
+        hh = self.small_size[1]
         diffcount = self.diff_count
         step=self.camsize[0]/ww        
         weave.inline(self.codestuck, ['mat', 'mat2','thres',  'ww', 'hh', 'diffcount','step'])
