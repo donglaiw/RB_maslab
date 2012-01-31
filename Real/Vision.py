@@ -36,6 +36,7 @@ class Vision (multiprocessing.Process):
         self.circles = np.array([0] * 102, np.uint16) #the largest circle
         self.thresholded =None
         self.thresholded2 =None
+        self.dis_small = None        
 
         self.circle_thres = self.sample_size[0] * self.sample_size[1] / 700
         self.label = np.zeros(self.sample_size, np.uint16)
@@ -152,7 +153,7 @@ class Vision (multiprocessing.Process):
         #print "haha",self.maxnumcl
         #self.circle = circle
         #self.maxnumcl = maxnumcl
-        print [e for e in count if e>10]        
+        #print [e for e in count if e>10]        
         #print count
         #print circle[0],circle[1]
         #print self.circles[0],self.circles[1]
@@ -170,14 +171,14 @@ class Vision (multiprocessing.Process):
         #threshold+rowsum+findRect
         mat = self.small
         thres = np.uint8(self.hsv[1])
-        ww = self.sample_size[0]            
-        hh = self.sample_size[1]
+        ww = self.small_size[0]            
+        hh = self.small_size[1]
         w_thres = self.width_thres
         h_thres = self.height_thres
         s_p = np.uint8([100, 100])
         e_p = np.uint8([100, 100])
         maxlen = np.zeros(2, np.uint8)        
-        #print thres,mat[0]
+        #print thres
         weave.inline(self.codewall, ['mat', 'thres', 'w_thres', 'h_thres', 'ww', 'hh', 's_p', 'e_p', 'maxlen'])
         #print maxlen ,self.height_thres
         if maxlen[1] >= self.height_thres:
@@ -197,14 +198,14 @@ class Vision (multiprocessing.Process):
         b_thres = self.blue_thres
         blueline = self.blueline
         weave.inline(self.codeline, ['mat', 'thres', 'b_thres', 'ww', 'hh', 'blueline'])
-        print self.blueline
+        #print self.blueline
     
     def CheckStuck(self):          
         mat = np.asarray(self.sample[:, :], dtype=np.uint8)
         mat2 = np.asarray(self.small[:, :], dtype=np.uint8)
         thres = self.same_thres
-        ww = self.sample_size[0]            
-        hh = self.sample_size[1]
+        ww = self.small_size[0]            
+        hh = self.smal_size[1]
         diffcount = self.diff_count
         step=self.camsize[0]/ww        
         weave.inline(self.codestuck, ['mat', 'mat2','thres',  'ww', 'hh', 'diffcount','step'])
@@ -218,6 +219,7 @@ class Vision (multiprocessing.Process):
         
     def display(self):
         self.numobj = 0
+        #print self.wall,"draw wall"
         if self.state == 'r' and self.circles != None:
             self.numobj = 0
             if self.circles[2] != 0:
@@ -230,9 +232,12 @@ class Vision (multiprocessing.Process):
                     #print self.circles.height,center
                     cv.Circle(self.sample, center, radius, (0, 0, 255), 3, 8, 0)
                 self.numobj = i
-        elif self.state == 'y' and self.wall != []:
-            self.numobj = 1
-            cv.Rectangle(self.small, (0, self.wall[0]), (self.small_size[0], self.wall[1]), (0, 0, 255), 5)
+        elif self.state == 'y':
+            if self.wall != []:
+                self.numobj = 1
+                cv.Resize(self.sample,self.dis_small)
+                #print self.wall,"wooo"
+                cv.Rectangle(self.dis_small, (0, self.wall[0]), (self.small_size[0], self.wall[1]), (0, 0, 255), 5)
         else:
             #blue line
             for i in range(self.sample_size[0]):
@@ -259,6 +264,7 @@ class Vision (multiprocessing.Process):
     def Init_Binary(self):
         self.thresholded = cv.CreateImage(self.sample_size, cv.IPL_DEPTH_8U, 1)
         self.thresholded2 = cv.CreateImage(self.sample_size, cv.IPL_DEPTH_8U, 1)
+        self.dis_small = cv.CreateImage(self.small_size[:2], cv.IPL_DEPTH_8U, 3)        
 
     def ThresWall(self, state):        
         #need to process the latest one        
@@ -445,7 +451,7 @@ connectedness:
         for (int i=0; i<hh; ++i){/*each height*/
              rowsum=0;
              windex=0;
-             //printf("ww %d,%d\\n",mat[0],thres[0]);
+             //printf("ww %d,%d,%d\\n",thres[0],thres[1],thres[2]);
              for (int j=0; j<ww; ++j){/*each width*/
                  if(mat[hindex+windex]>=thres[0] && mat[hindex+windex]<=thres[3] 
                  && mat[hindex+windex+1]>=thres[1] && mat[hindex+windex+1]<=thres[4]
@@ -455,7 +461,8 @@ connectedness:
              windex+=3;
              }
              hindex+=hstep;             
-             if (rowsum>=w_thres){                    
+            //take the last segment as 0...
+             if (rowsum>=w_thres && i<hh-1){                    
              //printf("%d,%d,%f,%d,%d,%d,%d\\n",i,rowsum,w_thres,s_p[0],e_p[0],maxlen[0],maxlen[1]);     
                 if (s_p[0]==100){
                     s_p[0]=i; 
@@ -466,13 +473,14 @@ connectedness:
                 }
             }else{
                 kill=1;
-             //printf("cc %d,%d\\n",maxlen[0],maxlen[1]);     
-
+             //printf("well...%d \\n",maxlen[0]);     
                 if (maxlen[0]!=0){
+             //printf("ccc:  %d,%d\\n",maxlen[0],maxlen[1]);     
                     if( maxlen[0]>maxlen[1]){
                         maxlen[1]=maxlen[0];
                         s_p[1]=s_p[0];
                         e_p[1]=e_p[0];
+                        maxlen[0]=0;
                     }else{
                         maxlen[0]=0;
                         s_p[0]=100;
@@ -481,9 +489,10 @@ connectedness:
                 }else{
                         s_p[0]=100;
                         e_p[0]=100;		
-		}
+		            }
+                }   
             }
-        }
+
           // if wall found, is it in the center?
          if(maxlen[1] >= h_thres){
          int sl=0,sr=0,ss=s_p[1],ee=e_p[1];
@@ -569,11 +578,12 @@ connectedness:
         #input:['mat', 'mat2', 'ww', 'hh','step' ]        downsample from mat to mat2
         self.codecopy = '''        
         int hindex=0,windex=0,hstep=3*ww,tmp1,tmp2;        
+        printf("%d,%d,%d,%d\\n",step,ww,hh,hstep);
         for (int i=0; i<hh; ++i){/*each height*/                     
 	    windex=0;    
         for (int j=0; j<ww; ++j){/*each width*/
         tmp2=hindex+windex;
-        tmp1=tmp2*step;
+        tmp1=hindex*step*step+windex*step;
         //printf("%d,%d,%d\\n",tmp1,tmp2,step);
            mat2[tmp2]=mat[tmp1];
            mat2[tmp2+1]=mat[tmp1+1];
