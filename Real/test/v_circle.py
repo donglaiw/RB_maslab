@@ -6,7 +6,7 @@ sys.path.append('../')
 import Vision as vv
 
 a=vv.Vision(None)
-a.frame = cv.LoadImage("../33.jpg")
+a.frame = cv.LoadImage("../22.jpg")
 cv.Resize(a.frame,a.sample)
 cv.CvtColor(a.sample, a.hsv_frame, cv.CV_BGR2HSV)
 a.hsv_np= np.asarray(a.hsv_frame[:, :], dtype=np.uint8)

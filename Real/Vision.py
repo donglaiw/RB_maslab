@@ -166,14 +166,7 @@ class Vision (multiprocessing.Process):
         #print count
         #print circle[0],circle[1]
         #print self.circles[0],self.circles[1]
-        if self.circles[0]==0:
-            self.target = 0
-        elif self.circles[0]<ww/3:
-            self.target=1
-        elif self.circles[0]>2*ww/3:
-            self.target=3
-        else:
-            self.target=2
+        self.target=lhmin[0]
         """
         if self.target>0:
             print "found ball!!!!!!!!!!!!!!!!!!!",time.time()                
@@ -236,18 +229,17 @@ class Vision (multiprocessing.Process):
     def display(self):
         self.numobj = 0
         #print self.wall,"draw wall"
-        if self.state == 'r' and self.circles != None:
+        if self.state == 'r' and self.circles[0] != 0:
             self.numobj = 0
-            if self.circles[2] != 0:
-                for i in xrange(len(self.circles) / 3):                    
-                    radius = int(self.circles[i * 3 + 2])
-                    print "circle", i, radius, int(self.circles[i * 3]), int(self.circles[i * 3 + 1])
-                    if radius == 0:
-                        break; 
-                    center = (int(self.circles[i * 3]), int(self.circles[i * 3 + 1]))
-                    #print self.circles.height,center
-                    cv.Circle(self.sample, center, radius, (0, 0, 255), 3, 8, 0)
-                self.numobj = i
+            i=0
+            while self.circles[3*i] != 0:
+                radius = int(self.circles[i * 3 + 2])
+                print "circle", i, radius, int(self.circles[i * 3]), int(self.circles[i * 3 + 1])
+                center = (int(self.circles[i * 3]), int(self.circles[i * 3 + 1]))
+                #print self.circles.height,center
+                cv.Circle(self.sample, center, radius, (0, 0, 255), 3, 8, 0)
+                self.numobj +=1
+                i+= 1
         elif self.state == 'y':
             if self.wall != []:
                 self.numobj = 1
@@ -443,8 +435,14 @@ connectedness:
     
     // find circles
     hindex2=0;
+    c=0;
+    hstep=0;
     for( int i = 1; i <= ntable; i++ ){
         if(count[i]>=thres_size ){
+        if(count[i]>hstep){
+        c=hindex2;
+        hstep=count[i];
+        }
         hindex=lhmax[i]-lhmin[i]+1;
         windex=lwmax[i]-lwmin[i]+1;
         //some shape constraint and in the middle range
@@ -458,6 +456,16 @@ connectedness:
         //printf("c:%d,%d,%d,%d\\n",thres_size,hindex2,hindex,windex);
         }        
     }
+    //a little hacky to pass variables...
+        if (hindex2==0){
+            lhmin[0] = 0;}
+        else if(circle[c*3]<ww/3){
+            lhmin[0] = 1;}
+        else if (circle[c*3]>2*ww/3){
+            lhmin[0] = 3;}
+        else{
+            lhmin[0] = 2;
+            }
     //end criteria of the circles
     circle[hindex2*3]=0;
         '''        
