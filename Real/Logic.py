@@ -43,7 +43,7 @@ class Logic(multiprocessing.Process):
         while not self.SendState('v',('c',False)):True
         while True:
             #self.Nav2YellowWall()
-            #self.GetBall()
+            self.GetBall()
             pass
     def Close(self):       
         while not self.SendState('c',('O',False)):True
