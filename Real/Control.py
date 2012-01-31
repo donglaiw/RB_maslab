@@ -1,3 +1,4 @@
+import serial
 import multiprocessing, time
 
 ############### A)Control Automation###############
@@ -18,6 +19,7 @@ class Control(multiprocessing.Process):
                 #Write Command
                 self.port.flush()
                 try:
+                    print command,"   wwwww"
                     self.port.write(command)                                    
                 except:
                     print "write ard error"
@@ -27,7 +29,7 @@ class Control(multiprocessing.Process):
                 #Read from arduino
                 if wait:
                     fromArd = self.port.readline()
-                    #print fromArd," aa ",time.time()
+                    print fromArd," aa ",time.time()
                     self.port.flush()
                     self.pipe_logic.send(fromArd)                                              
                 #self.pipe_logic.flush()            
@@ -43,7 +45,7 @@ class Control(multiprocessing.Process):
                 print "connected"
                 break        
             except:
-                print "Arduino not connected"
+                print "Arduino not connected",i
 
     def close(self):
         print "closing adriuno"

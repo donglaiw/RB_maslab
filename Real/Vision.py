@@ -14,7 +14,7 @@ class Vision (multiprocessing.Process):
         self.target = 0
 
         #2. image caputuring
-        self.capture = cv.CaptureFromCAM(0)
+        self.capture = cv.CaptureFromCAM(1)
         """
         #useless...
         cvSetCaptureProperty(self.capture, cv.CV_CAP_PROP_FRAME_WIDTH, 160);
@@ -73,6 +73,7 @@ class Vision (multiprocessing.Process):
             if self.pipe_vision.poll(0.01):             
                 #command from logic
                 self.pipe_vision.send(self.target)
+                print "sent",self.target
 
             #print "0: " ,time.time()
             #2. vision process
@@ -173,16 +174,16 @@ class Vision (multiprocessing.Process):
         hh = self.sample_size[1]
         w_thres = self.width_thres
         h_thres = self.height_thres
-        s_p = [-1, -1]
-        e_p = [-1, -1]
-        maxlen = np.zeros(2, int)        
+        s_p = np.uint8([100, 100])
+        e_p = np.uint8([100, 100])
+        maxlen = np.zeros(2, np.uint8)        
         #print thres,mat[0]
         weave.inline(self.codewall, ['mat', 'thres', 'w_thres', 'h_thres', 'ww', 'hh', 's_p', 'e_p', 'maxlen'])
         #print maxlen ,self.height_thres
         if maxlen[1] >= self.height_thres:
             self.wall = (s_p[1], e_p[1])
             self.target = e_p[0]
-            print "wall found!!!!!!!!!!!"
+            #print "wall found!!!!!!!!!!!",self.target
         else:
             self.wall = []
             self.target = 0
@@ -454,9 +455,9 @@ connectedness:
              windex+=3;
              }
              hindex+=hstep;             
-             //printf("%d,%d,%f\\n",i,rowsum,w_thres);     
              if (rowsum>=w_thres){                    
-                if (s_p[0]==-1){
+             //printf("%d,%d,%f,%d,%d,%d,%d\\n",i,rowsum,w_thres,s_p[0],e_p[0],maxlen[0],maxlen[1]);     
+                if (s_p[0]==100){
                     s_p[0]=i; 
                     kill=0;
                 }else if(kill==0){
@@ -465,6 +466,8 @@ connectedness:
                 }
             }else{
                 kill=1;
+             //printf("cc %d,%d\\n",maxlen[0],maxlen[1]);     
+
                 if (maxlen[0]!=0){
                     if( maxlen[0]>maxlen[1]){
                         maxlen[1]=maxlen[0];
@@ -472,10 +475,13 @@ connectedness:
                         e_p[1]=e_p[0];
                     }else{
                         maxlen[0]=0;
-                        s_p[0]=-1;
-                        e_p[0]=-1;
+                        s_p[0]=100;
+                        e_p[0]=100;
                     }
-                }
+                }else{
+                        s_p[0]=100;
+                        e_p[0]=100;		
+		}
             }
         }
           // if wall found, is it in the center?

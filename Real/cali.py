@@ -76,8 +76,8 @@ class Calibrate():
         frameimg.pack()
        
     def displayImage(self):
-        #self.vision.frame = cv.QueryFrame(self.vision.capture)        
-        self.vision.frame = cv.LoadImage("test/img2/22.jpg")
+        self.vision.frame = cv.QueryFrame(self.vision.capture)        
+        #self.vision.frame = cv.LoadImage("test/img2/22.jpg")
         cv.Resize(self.vision.frame, self.vision.sample)        
         cv.CvtColor(self.vision.sample, self.vision.hsv_frame, cv.CV_BGR2HSV)       
         self.vision.hsv_np= np.asarray(self.vision.hsv_frame[:, :], dtype=np.uint8)

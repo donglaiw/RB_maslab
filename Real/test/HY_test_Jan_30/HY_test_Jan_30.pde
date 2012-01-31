@@ -34,7 +34,7 @@ int fb=0,fb_c=0,fb_thres=10;
 int rd=0,rd_c=0,rd_thres=5;
 int diff_thres=50; //simple filter out ir outlier
 
-char Gstate=' ',tmp=' ';
+char Gstate=' ';
 
 
 void setup() {
@@ -50,69 +50,37 @@ void setup() {
 
 
 void loop() {
-    switch(Gstate) {
-        case 'N':
-            //Navigation
-            Navigation();
-            break;
-        case 'T':
-            //Turn a small angle left
-            goTurn(-1);
-            break;
-        case 't':
-			//Turn a small angle right
-            goTurn(1);
-            break;
-        case 'U':
-			//Tune a smaller angle left
-            goTurn2(-1);
-            break;
-        case 'u':
-			//Tune a smaller angle right
-            goTurn2(1);
-            break;
-        case 'G':
-			//Go straight until stuck
-            break;
-        case 'A':
-			//Align Wall for throw ball
-            AlignWall();
-          Serial.print("done AlignWall");            
-            break;
-        case 'B':
-	//Throw Ball
-            DumpBall();
-    Serial.print("done DumpBall");            
-            break;
-        case 'W':
-        //Get Switch
-            break;
-        case 'K':
-		//Get Out of Stuck
-          getOutStuck();
-              Serial.print("done GetOutStuck");            
-
-            break;
-        }
-
-    /*
-     int val=getIr(F_IR);
-     Serial.print("short:");
-     Serial.println(val);
-    */
-
-
-    /*
-    int val=getIr(R_IR);
-    Serial.print("long:");
-    Serial.println(val);
-    */
-if(Serial.available()){
-Gstate= (char)Serial.read();
+  //setMotor(100,100);
+  do {
+    AlignWall();
+  } while (AlignWall()==0);
+  //setMotor(120,120);
+  //delay(1000);
+  //setMotor(0,0);
 }
-      }
 
-
+int AlignWall(){
+  
+  int val_l=analogRead(F_IR);
+  int val_r=analogRead(S_IR);
+  Serial.println(val_l);
+  Serial.println(val_r);
+  
+  int aligned=0;
+  if (val_l>300 || val_r>300){
+  
+  if (abs((val_l-val_r))>20){
+    if (val_l<val_r) {
+      setMotor(120,-120);
+    }else {
+      setMotor(-120,120);
+    }
+  }else{
+    aligned=1;
+  }
+  }
+  return aligned;
+}
 void serialEvent() {
     // get the new byte:
 /*
@@ -130,7 +98,7 @@ void Navigation(){
 	if (fb==1){
         if(rd==1){
       //go into the new era
-goUturn();
+    goUturn();
       }else{
 	goTurn60(-1);
 	}
@@ -248,6 +216,7 @@ void DumpBall() {
     servo.detach();
     }
 
+/*
 void AlignWall() {
     int stuck=0;
     setMotor(120,120);
@@ -259,13 +228,13 @@ void AlignWall() {
 
         if (val_l==0) {
             stuck=1;
-            //Serial.print("left");
-            //Serial.println(val_l);
+            Serial.print("left");
+            Serial.println(val_l);
             }
         else if (val_r==0) {
 
-            //Serial.print("right");
-            //Serial.println(val_r);
+            Serial.print("right");
+            Serial.println(val_r);
             stuck=1;
             }
 
@@ -292,6 +261,7 @@ void AlignWall() {
 
     }
 
+*/
 void getOutStuck(){
   setMotor(-100,-100);
   delay(400);

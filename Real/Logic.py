@@ -20,21 +20,23 @@ class Logic(multiprocessing.Process):
         self.timeout_turn=5  #for 16 discrete turns
         self.timeout_back=1.5
         self.timeout_new=2
-        self.timeout_nav=10
+        self.timeout_nav=180
        
 
     def Connect(self):
         self.control.connect()
-        while not self.control.portOpened: True
+        while not self.control.portOpened: 
+            time.sleep(1)
+            self.control.connect()
         self.control.start()
 
     def run(self):             
         # stage 1: find yellow wall and dump balls
-        while not self.SendState('c','N'):True
-        """
+        #while not self.SendState('c',('N',Falise)):True
         while True:
             self.Nav2YellowWall()
             #self.GetBall()
+        """
         """
 
     def Close(self):        
@@ -92,12 +94,14 @@ class Logic(multiprocessing.Process):
     def Nav2YellowWall(self):
         #start navigation
         st=time.time()
-        while not self.SendState('c','N'):True
+        while not self.SendState('c',('N',False)):True
         while time.time()-st<self.timeout_nav:
             #check vision
+            print "ask........"
             while not self.SendState('v','?'):True
             while not self.pipe_lv.poll(0.05):True
             state=self.pipe_lv.recv()
+            print state,"wooooooooooooooooo"
             if state==-1:
                 #stuck
                 self.GetOutStuck()
@@ -140,13 +144,22 @@ class Logic(multiprocessing.Process):
         #1. visually align the yellow wall after detected
         self.AlignWall(state)
         #2. physically align the yellow wall
-        while not self.SendState('c',('A',False)):True            
+        while not self.SendState('c',('A',True)):True            
+        while not self.pipe_lc.poll(0.05): True
+        tmp=self.pipe_lv.recv()
+
         #3. visually check for special cases when bumpers fail
 
         #4. throw ball
-        while not self.SendState('c',('B',False)):True
+        while not self.SendState('c',('B',True)):True
+        while not self.pipe_lc.poll(0.05): True
+        tmp=self.pipe_lv.recv()
+
         #5. get out of stuck 
-        while not self.SendState('c',('K',False)):True
+        while not self.SendState('c',('K',True)):True
+        while not self.pipe_lc.poll(0.05): True
+        tmp=self.pipe_lv.recv()
+
        
     def FindObj(self):         
         while not self.SendState('v','?'):True
@@ -213,7 +226,7 @@ if __name__ == "__main__":
     player.Connect()
     print "ahha"
     #Waiting for switch
-    player.SwitchOn()
+    #player.SwitchOn()
 
     #GO!GO!!GO!!!
     player.start()     
