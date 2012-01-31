@@ -61,16 +61,12 @@ void loop() {
 int AlignWall(){
   int val_l=analogRead(F_IR);
   int val_r=analogRead(S_IR);
-  //Serial.print("left: ");
-  //Serial.println(val_l);
-  //Serial.print("right: ");
-  //Serial.println(val_r);
-  while ((val_l<200) || (val_r<200)){
+  while ((val_l<300) || (val_r<300)){
     setMotor(120,120);
     val_l=analogRead(F_IR);
     val_r=analogRead(S_IR);
   }
-  Serial.println('done  '+val_r+'   '+val_l);    
+  delay(5000);
   int aligned=0;
   
   while (aligned==0){
@@ -88,7 +84,7 @@ int AlignWall(){
     aligned=1;
   }
   }
-  
+  delay(5000);
   setMotor(120,120);
   delay(1000);
   setMotor(0,0);

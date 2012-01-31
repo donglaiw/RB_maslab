@@ -55,7 +55,7 @@ class Vision (multiprocessing.Process):
         #3.2. yellow wall
         self.wall = []
         self.width_thres = 0.7 * self.small_size[0]
-        self.height_thres = 0.05 * self.small_size[1]        
+        self.height_thres = 0.15 * self.small_size[1]        
         
         #5. for stuck
         self.small = np.zeros(self.small_size, np.uint8)
@@ -104,8 +104,9 @@ class Vision (multiprocessing.Process):
                 else:
                     self.target=0
                     #2.2 check for obj
-                    #self.FindCircle()
-                    self.FindWall()                
+                    self.FindCircle()
+                    if self.target==0:
+                        self.FindWall()                
                     #pass
                 #print "3: ",time.time()
             else:
@@ -165,7 +166,14 @@ class Vision (multiprocessing.Process):
         #print count
         #print circle[0],circle[1]
         #print self.circles[0],self.circles[1]
-        self.target = self.circles[0]                
+        if self.circles[0]==0:
+            self.target = 0
+        elif self.circles[0]<ww/3:
+            self.target=1
+        elif self.circles[0]>2*ww/3:
+            self.target=3
+        else:
+            self.target=2
         """
         if self.target>0:
             print "found ball!!!!!!!!!!!!!!!!!!!",time.time()                

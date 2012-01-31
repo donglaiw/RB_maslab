@@ -15,7 +15,9 @@ class Control(multiprocessing.Process):
         while True:
             # parse the command
             if self.pipe_logic.poll(0.1):
-                (command,wait)=self.pipe_logic.recv()
+                #in order to function job killing 
+                while self.pipe_logic.poll():
+                    (command,wait)=self.pipe_logic.recv()
                 #Write Command
                 self.port.flush()
                 try:
@@ -27,7 +29,7 @@ class Control(multiprocessing.Process):
                 #Read from arduino
                 if wait:
                     fromArd=''
-                    while len(fromArd) == 0 or fromArd[0]!='d':
+                    while len(fromArd) == 0 or (fromArd[0]!='d' and fromArd[0]!='0' and fromArd[0]!='1)':
                         fromArd = self.port.readline()
                     print "res ",fromArd,len(fromArd),fromArd[0],time.time()
                     self.port.flush()

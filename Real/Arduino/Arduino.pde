@@ -254,13 +254,14 @@ void DumpBall() {
 int AlignWall() {
   int val_l=analogRead(F_IR);
   int val_r=analogRead(S_IR);
-  while ((val_l<200) || (val_r<200)){
+  while ((val_l<300) || (val_r<300)){
     setMotor(120,120);
     val_l=analogRead(F_IR);
     val_r=analogRead(S_IR);
   }
   int aligned=0;
-  
+  delay(5000);
+
   while (aligned==0){
     val_l=analogRead(F_IR);
     val_r=analogRead(S_IR);
@@ -356,15 +357,8 @@ int getIr(int port) {
     }
 
 //---------------
-void getAnalog() {
-    int port = 1;//getData(2);
-    int analogData = analogRead(port);
-    Serial.println(analogData);
-    delay(10);
-    }
-//---------------
 void getSwitch() {
-    int digitalData = digitalRead(10);
+    int digitalData = digitalRead(22);
     Serial.println(digitalData);
     delay(10);
     }
