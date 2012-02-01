@@ -149,9 +149,7 @@ class Logic(multiprocessing.Process):
         #ogj: wall or ball
         while not self.SendState('v',obj):True
         print "rot 2 find obj"
-        self.SendState('v','?')                                    
-        while not self.pipe_lv.poll(0.05):True
-        state=self.pipe_lv.recv()
+        state=self.SendState2('v','?')                                    
         print "state.."
         if state<=0:
             # get started
