@@ -199,7 +199,7 @@ class Logic(multiprocessing.Process):
         self.AlignObj(state)
         while not self.SendState('c',('G',0)):True                
         #2 go a default time
-        time.sleep(0.1)
+        while not self.SendState('v',obj):True
         #3 go until wall collision or state=4(close to obj) by vision
         state=0
         while state!=-1 and state!=4:

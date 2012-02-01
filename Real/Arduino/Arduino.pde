@@ -50,7 +50,6 @@ void setup() {
 
 
 void loop() {
-/*
   switch(Gstate) {
         case 'N':
             //Navigation
@@ -135,11 +134,9 @@ void loop() {
     Serial.println("long:");
     Serial.println(val);
     */
-/*
     if(Serial.available()){
      Gstate= (char)Serial.read();
     }
-*/
 
 //DumpBall();
 }
