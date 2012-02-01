@@ -85,9 +85,12 @@ class Vision (multiprocessing.Process):
                     if self.target!=0:
                         print self.target,"sent"
                     self.pipe_vision.send(self.target)
+                elif rec=='c':
+                    #print "clear out"
+                    self.stuck_acc=0
+                    self.target=0
                 else:
                     self.state=rec
-                    #print "clear out"
                     self.stuck_acc=0
                     self.target=0
 

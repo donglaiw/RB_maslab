@@ -198,8 +198,8 @@ class Logic(multiprocessing.Process):
         #1.suppose we stop in time and the ball is still in the vision                 
         self.AlignObj(state)
         while not self.SendState('c',('G',0)):True                
-        #2 go a default time
-        while not self.SendState('v',obj):True
+        #2 clear out stuck detection
+        while not self.SendState('v','c'):True
         #3 go until wall collision or state=4(close to obj) by vision
         state=self.SendState2('v','?')
         while state!=-1 and state!=4:
