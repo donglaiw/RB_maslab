@@ -201,13 +201,13 @@ class Logic(multiprocessing.Process):
         #2 go a default time
         while not self.SendState('v',obj):True
         #3 go until wall collision or state=4(close to obj) by vision
-        state=0
+        state=self.SendState2('v','?')
         while state!=-1 and state!=4:
+            self.AlignObj(state)
             self.SendState('v','?')
             print "vision send"
             while not self.pipe_lv.poll(0.05):True      
             state=self.pipe_lv.recv()
-            self.AlignObj(state)
             print state,"receive"
         if state==4:
             if obj=='r':
