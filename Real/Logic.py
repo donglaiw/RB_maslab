@@ -177,6 +177,7 @@ class Logic(multiprocessing.Process):
         #start navigation
         print "nav 2 find obj"        
         while not self.SendState('v',obj):True
+        state=self.SendState2('v','?')                                    
         st=time.time()
         while state ==0 and time.time()-st<=timeout:
             #check vision
