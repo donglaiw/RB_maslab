@@ -175,24 +175,29 @@ class Logic(multiprocessing.Process):
     
     def NavFindObj(self,obj,timeout):
         #start navigation
-        print "nav 2 find obj"        
         while not self.SendState('v',obj):True
         state=self.SendState2('v','?')                                    
-        st=time.time()
-        while state ==0 and time.time()-st<=timeout:
-            #check vision
-            self.SendState('v','?')
-            while not self.pipe_lv.poll(0.05):True
-            state=self.pipe_lv.recv()
-            #print state,"popo"
-            if state==-1:
-                #stuck,in case ir can't detect it
-                self.SendState2('c','K')
-                while not self.SendState('c',('N',0)):True
-                state=0
-            elif state>=1: 
-                self.pipe_lc.send(('S',0))
-                break;   
+        print "nav 2 find obj"
+        if state<=0:
+            while not self.SendState('c',('N',0)):True
+            st=time.time()
+            while state ==0 and time.time()-st<=timeout:
+                """
+                #check vision
+                self.SendState('v','?')
+                while not self.pipe_lv.poll(0.05):True
+                state=self.pipe_lv.recv()
+                #print state,"popo"
+                if state==-1:
+                    #stuck,in case ir can't detect it
+                    self.SendState2('c','K')
+                    while not self.SendState('c',('N',0)):True
+                    state=0
+                elif state>=1: 
+                    self.pipe_lc.send(('S',0))
+                    break;   
+                """
+                pass
         return state
 
    
