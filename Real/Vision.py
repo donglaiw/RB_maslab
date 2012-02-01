@@ -83,7 +83,7 @@ class Vision (multiprocessing.Process):
                 #print "vision got sent",rec
                 if rec=='?':
                     if self.target!=0:
-                        print self.target
+                        print self.target,"sent"
                     self.pipe_vision.send(self.target)
                 else:
                     self.state=rec

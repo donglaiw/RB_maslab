@@ -204,10 +204,11 @@ class Logic(multiprocessing.Process):
         state=0
         while state!=-1 and state!=4:
             self.SendState('v','?')
+            print "vision send"
             while not self.pipe_lv.poll(0.05):True      
             state=self.pipe_lv.recv()
             self.AlignObj(state)
-            print state
+            print state,"receive"
         if state==4:
             if obj=='r':
                 time.sleep(1.5)
