@@ -50,29 +50,44 @@ void setup() {
 
 
 void loop() {
-    switch(Gstate) {
+/*
+  switch(Gstate) {
         case 'N':
             //Navigation
             Navigation();
             break;
+        case 'S':
+            //Navigation
+            setMotor(0,0);
+            Gstate=' ';
+            break;
         case 'T':
             //Turn a small angle left
             goTurn(-1);
+            Gstate=' ';
+            Serial.println("d");            
             break;
         case 't':
 			//Turn a small angle right
             goTurn(1);
+            Gstate=' ';            
+         Serial.println("d");            
             break;
         case 'U':
 			//Tune a smaller angle left
             goTurn2(-1);
+                        Gstate=' ';  
+                                 Serial.println("d");            
             break;
         case 'u':
 			//Tune a smaller angle right
             goTurn2(1);
+                        Gstate=' ';  
+                                 Serial.println("d");            
             break;
         case 'G':
-			//Go straight until stuck
+            setMotor(120,120);//Go straight until stuck
+            Gstate=' ';  
             break;
         case 'A':
 			//Align Wall for throw ball
@@ -80,13 +95,14 @@ void loop() {
             //delay(5000);
              Serial.println("d");            
               delay(10);
+                          Gstate=' ';  
             break;
         case 'B':
 	//Throw Ball
             DumpBall();
             Serial.println("d");            
             delay(10);
-
+            Gstate=' ';  
             break;
         case 'W':
         //Get Switch
@@ -97,13 +113,13 @@ void loop() {
           getOutStuck();
          Serial.println("d");            
          delay(10);
-
+            Gstate=' ';  
             break;
         case 'O':
           analogWrite(9,0);
           break;    
         case 'o':
-          analogWrite(9,155);
+          analogWrite(9,255);
           break;
            }
 
@@ -119,10 +135,13 @@ void loop() {
     Serial.println("long:");
     Serial.println(val);
     */
+/*
     if(Serial.available()){
      Gstate= (char)Serial.read();
     }
-      
+*/
+
+//DumpBall();
 }
 
 
@@ -288,7 +307,7 @@ int AlignWall(){
 void getOutStuck(){
   setMotor(-100,-100);
   delay(400);
-  goTurn90(1);
+  goTurn90(-1);
   
 }
 
@@ -323,6 +342,7 @@ void goTurn(int dir) {
     setMotor(100*dir,-100*dir);
     delay(300);
     setMotor(0,0);
+    delay(500);
     }
 
 void goTurn2(int dir) {

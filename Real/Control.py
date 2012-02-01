@@ -31,7 +31,8 @@ class Control(multiprocessing.Process):
                     fromArd=''
                     while len(fromArd) == 0 or (fromArd[0]!='d' and fromArd[0]!='0'):
                         fromArd = self.port.readline()
-                    print "res ",fromArd,len(fromArd),fromArd[0],time.time()
+                        #print fromArd
+                    #print "res ",fromArd,len(fromArd),fromArd[0],time.time()
                     self.port.flush()
                     self.pipe_logic.send(fromArd[0])                                              
                 #self.pipe_logic.flush()            

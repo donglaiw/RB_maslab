@@ -76,16 +76,16 @@ class Calibrate():
         frameimg.pack()
        
     def displayImage(self):
-        #self.vision.frame = cv.QueryFrame(self.vision.capture)        
-        self.vision.frame = cv.LoadImage("33.jpg")
+        self.vision.frame = cv.QueryFrame(self.vision.capture)        
+        #self.vision.frame = cv.LoadImage("33.jpg")
         cv.Resize(self.vision.frame, self.vision.sample)        
         cv.CvtColor(self.vision.sample, self.vision.hsv_frame, cv.CV_BGR2HSV)       
         self.vision.hsv_np= np.asarray(self.vision.hsv_frame[:, :], dtype=np.uint8)
         self.vision.Copy()
         """
+        """
         cv.SetData(self.vision.dis_small,self.vision.small.tostring())
         cv.SaveImage("taa.jpg",self.vision.dis_small)
-        """
         if self.cali_type.get()==0:
             #red ball
             self.vision.ThresCircle()
