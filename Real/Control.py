@@ -26,16 +26,17 @@ class Control(multiprocessing.Process):
                     print "write ard error"
                 print "Roger "+command,time.time()
                 #Pause so the arduino can process                    
-                #Read from arduino
-                if wait:
+                #wait=0: just set Arduino state
+                #wait=1: wait until the full set moves are done
+                #wait=2: need output response sent
+                if wait>0:
                     fromArd=''
                     while len(fromArd) == 0 or (fromArd[0]!='d' and fromArd[0]!='0'):
                         fromArd = self.port.readline()
-                        #print fromArd
                     #print "res ",fromArd,len(fromArd),fromArd[0],time.time()
                     self.port.flush()
-                    self.pipe_logic.send(fromArd[0])                                              
-                #self.pipe_logic.flush()            
+                    if wait ==2:
+                        self.pipe_logic.send(fromArd[0])                                              
 
     def connect(self):
         print "call for duty"

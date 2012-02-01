@@ -67,6 +67,10 @@ class Vision (multiprocessing.Process):
         
         #6. set C-code
         self.GenCode()
+
+        #7. debug drawing mode
+        self.Init_Binary()
+        self
               
     def run(self):
         #self.frame = cv.QueryFrame(self.capture)
@@ -171,9 +175,13 @@ class Vision (multiprocessing.Process):
         #print circle[0],circle[1]
         #print self.circles[0],self.circles[1]
         self.target=lhmin[0]
-        """
         if self.target>0:
-            print "found ball!!!!!!!!!!!!!!!!!!!",time.time()                
+            print "found ball!!!!!!!!!!!!!!!!!!!",time.time()               
+            self.state='r'
+            self.display()
+            cv.SaveImage(str(time.time())+"rr.jpg",self.sample)
+            
+        """
         if self.target!=0:
             self.display()
             print "save"
@@ -198,6 +206,9 @@ class Vision (multiprocessing.Process):
             self.wall = (s_p[1], e_p[1])
             self.target = e_p[0]
             print "wall found!!!!!!!!!!!",self.target
+            self.state='y'
+            self.display()
+            cv.SaveImage(str(time.time())+"yy.jpg",self.sample)
         else:
             self.wall = []
             self.target = 0
