@@ -85,7 +85,7 @@ void loop() {
                                  Serial.println("d");            
             break;
         case 'G':
-            setMotor(120,120);//Go straight until stuck
+            setMotor(60,60);//Go straight until stuck
             Gstate=' ';  
             break;
         case 'A':
