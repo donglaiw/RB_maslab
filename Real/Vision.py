@@ -51,7 +51,8 @@ class Vision (multiprocessing.Process):
         
         #3.1 blue wall
         self.blueline = np.zeros(self.sample_size[0], np.uint16)
-        self.blue_thres = int(0.05 * self.sample_size[1])
+        self.blue_thres = int(0.01* self.sample_size[1])
+        print self.blue_thres
               
         #3.2. yellow wall
         self.wall = []
