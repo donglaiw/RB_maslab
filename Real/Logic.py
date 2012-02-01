@@ -196,7 +196,7 @@ class Logic(multiprocessing.Process):
    
     def TrackObj(self,obj,state):
         #1.suppose we stop in time and the ball is still in the vision                 
-        self.AlignObj(obj,state)
+        self.AlignObj(state)
         while not self.SendState('c',('G',0)):True                
         #2 go a default time
         time.sleep(0.1)
