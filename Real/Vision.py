@@ -71,6 +71,7 @@ class Vision (multiprocessing.Process):
 
         #7. debug drawing mode
         self.Init_Binary()
+        self.saved=0
               
     def run(self):
         #self.frame = cv.QueryFrame(self.capture)
@@ -177,11 +178,12 @@ class Vision (multiprocessing.Process):
         #print circle[0],circle[1]
         #print self.circles[0],self.circles[1]
         self.target=lhmin[0]
-        if self.target>0:
+        if self.target>0 and self.saved==0:
             print "found ball!!!!!!!!!!!!!!!!!!!",time.time()               
             self.state='r'
             self.display()
             cv.SaveImage(str(time.time())+"rr.jpg",self.sample)
+            self.saved=1
             
         """
         if self.target!=0:

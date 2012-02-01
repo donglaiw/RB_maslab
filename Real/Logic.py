@@ -149,6 +149,9 @@ class Logic(multiprocessing.Process):
         #ogj: wall or ball
         while not self.SendState('v',obj):True
         print "rot 2 find obj"
+        self.SendState('v','?')                                    
+        while not self.pipe_lv.poll(0.05):True
+        state=self.pipe_lv.recv()
         if state<=0:
             # get started
             self.SendState('c',("T",1))            
@@ -197,7 +200,7 @@ class Logic(multiprocessing.Process):
         self.AlignObj(obj,state)
         while not self.SendState('c',('G',0)):True                
         #2 go a default time
-        time.sleep(1)
+        time.sleep(0.1)
         #3 go until wall collision or state=4(close to obj) by vision
         state=0
         while state!=-1 and state!=4:
