@@ -19,13 +19,14 @@ class Logic(multiprocessing.Process):
         self.total=total
         self.timeout_straight=5
         self.timeout_turn=7  #for 16 discrete turns
-        self.timeout_back=1.5
-        self.timeout_new=2
-        self.timeout_nav=80
-        self.s1=100
+        self.timeout_nav=20
+        self.s1=self.timeout_turn+self.timeout_nav
+        self.timeout_s1=100
         self.st=0; 
         self.dump=0;
 
+
+############################################1 Process communicaiton ######################################
     def Connect(self):
         self.control.connect()
         while not self.control.portOpened: 
@@ -37,9 +38,16 @@ class Logic(multiprocessing.Process):
         while not self.SendState('c',('o',0)):True
         while not self.SendState('v','c'):True
         # stage 1: eat as many red balls as possible: navi+ball
-
+        """
+        while time.time()-self.st+self.s1<self.timeout_s1:
+            self.FindRedBall()
+        """
         # stage 2: dedicate to find yellow wall
-
+        """
+        found=0
+        while found==0:
+            found=self.FindYellowWall()
+        """
         # stage 3: stay around:one step out+ball+back
 
         self.st=time.time()
@@ -89,7 +97,7 @@ class Logic(multiprocessing.Process):
             't':Turn a small angle right
             'U':Tune a smaller angle left
             'u':Tune a smaller angle right
-            'G':Go straight until stuck
+            'G':Go straight
             'A':Align Wall for throw ball
             'B':Throw Ball
             'W':Get Switch
@@ -123,109 +131,97 @@ class Logic(multiprocessing.Process):
             tmp=self.pipe_lc.recv()
             print "sss.",tmp,len(tmp)
     
+
+
+############################################2 Ball & Wall ######################################
+    def FindObj(self,obj):
+        #1. find ball
+        state=self.RotFindObj(obj,self.timeout_turn)
+        if state==0:            
+            #nothing in the view
+            state=self.NavFindObj(obj,self.timeout_nav)
+        
+        #2.track ball 
+        if state>0:
+            self.TrackObj(obj,state)
+
     def RotFindObj(self,obj,timeout):        
         #ogj: wall or ball
-        state=self.SendState2('v',obj)
+        while not self.SendState('v',obj):True
         print "rot 2 find obj"
         if state<=0:
             # get started
             self.SendState('c',("T",1))            
             # 1. Big Move            
             st=time.time()
-            while state in obj and time.time()-st<=timeout:
+            while state ==0 and time.time()-st<=timeout:
                 self.SendState('c',("T",1))
                 self.SendState('v','?')                                    
                 while not self.pipe_lv.poll(0.05):True
                 state=self.pipe_lv.recv()
+                if state==-1:
+                    self.SendState2('c','K')
+                    state=0
+                    time.sleep(1.5)
+                    #vision may screw up during sharp turns 
                 #print state,"lll"
             #1.1: kill the last Turn
             self.pipe_lc.send(('S',0))
-            print "obj found"
+            print "rot obj done"
         return state
     
     def NavFindObj(self,obj,timeout):
         #start navigation
         print "nav 2 find obj"        
         while not self.SendState('v',obj):True
-        while True:
-            #check vision
-            self.SendState('v','?')
-            while not self.pipe_lv.poll(0.05):True
-            state=self.pipe_lv.recv()
-            #print state,"popo"
-            if state==-1:
-                #stuck
-                self.SendState2('c','K')
-                while not self.SendState('c',('N',0)):True
-            elif state>=1 and state<=3:
-                #self.pipe_lc.send(('S',False));
-                self.Go2Yellowall(state)
-                #detect yellow wall
-                print "yellow found...."
-                break;
-   
-    def Nav2YellowWall(self):
-        #start navigation
-        print "send Nav...."
         st=time.time()
-        while time.time()-st<self.timeout_nav:
+        while state ==0 and time.time()-st<=timeout:
             #check vision
             self.SendState('v','?')
             while not self.pipe_lv.poll(0.05):True
             state=self.pipe_lv.recv()
             #print state,"popo"
             if state==-1:
-                #stuck
+                #stuck,in case ir can't detect it
                 self.SendState2('c','K')
-                #pass
-            elif state>=1 and state<=3:
-                #detect red ball
-                self.pipe_lc.send(('S',0))
-                self.GetBall()
-                """
-                self.AlignBall(state)
-                self.GoUntilStuck()
-                """
-                print "...balll..."
-            elif state>=4 and time.time()-self.st>0 and self.dump==0:
-                #self.pipe_lc.send(('S',False));
-                #detect yellow wall
-                print "dump...."
-                #self.DumpBall(state)
-                #self.dump=1
-            if state!=0: 
-                #keep moving
                 while not self.SendState('c',('N',0)):True
+                state=0
+            elif state>=1: 
+                self.pipe_lc.send(('S',0))
+                break;   
+        return state
+
    
-    def GoUntilStuck(self):
-        #3.get ball: go go go until stuck+get stuck                 
+    def TrackObj(self,obj,state):
+        #1.suppose we stop in time and the ball is still in the vision                 
+        self.AlignObj(obj,state)
         while not self.SendState('c',('G',0)):True                
-        #3.1 go a default time
-        time.sleep(3)
-        #while not self.SendState('c',('S',1)):True        
-        #3.2 go until wall collision by bumper/vision
+        #2 go a default time
+        time.sleep(1)
+        #3 go until wall collision or state=4(close to obj) by vision
         state=0
-        while state>=0:
+        while state!=-1 and state!=4:
             self.SendState('v','?')
             while not self.pipe_lv.poll(0.05):True      
             state=self.pipe_lv.recv()
-        self.SendState2('c','K')
+            self.AlignObj(state)
+        if state==4:
+            if obj=='r':
+                time.sleep(1.5)
+                print "got it "
+            else:
+                #using IR for final fine align
+                self.DumpBall()
+                print "dump it "
 
-    def FindRedBall(self):
-        #0 set vision state        
-        while not self.SendState('v','r'):True
-        #1. find ball
-        #print "get started....."
-        state=self.FindObj()
-        if state<=0:            
-            #stuck or timeout
-            self.SendState2('c','K')
-        else:
-            #2.track ball 
-            self.AlignBall(state)
-
-
-    def DumpBall(self,state):
+    def AlignObj(self,state):
+        if state!=2:
+            if state==1:
+                self.SendState2('c','U')
+            else:
+                self.SendState2('c','u')
+    
+    def DumpBall(self):
         #1. visually align the yellow wall after detected
         #self.AlignWall(state)
         #2. physically align the yellow wall
@@ -238,29 +234,7 @@ class Logic(multiprocessing.Process):
         print "dumped..."
        
     
-    def AlignWall(self,state):
-        #take it easy...? what if obstacles in between
-        if state!=5:
-            if state==4:
-                self.SendState2('c','U')
-            else:
-                self.SendState2('c','u')
-        """
-        #1 check where we are
-        while not self.SendState('v','?'):True
-        while not self.pipe_lv.poll(0.05):True
-        state=self.pipe_lv.recv()
-        """
         
-    def AlignBall(self,state):
-        #take it easy...? what if obstacles in between
-        if state!=2:
-            if state==1:
-                self.SendState2('c','U')
-            else:
-                self.SendState2('c','u')
-
-
         
 
 if __name__ == "__main__":
@@ -271,7 +245,6 @@ if __name__ == "__main__":
     #Waiting for switch
     player.SwitchOn()
     #GO!GO!!GO!!!
-    print "wowow"
     player.start()     
     st=time.time()
     while time.time()-st<180:True

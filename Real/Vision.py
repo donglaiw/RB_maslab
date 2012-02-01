@@ -28,6 +28,7 @@ class Vision (multiprocessing.Process):
         self.step=self.sample_size[0]/self.small_size[0]
         self.hsv = [[0] * 12] * 3        
         self.loadHSV()
+        self.state='r'
 
         #3. for circle
         self.sample = cv.CreateImage(self.sample_size, cv.IPL_DEPTH_8U, 3)        
@@ -70,7 +71,6 @@ class Vision (multiprocessing.Process):
 
         #7. debug drawing mode
         self.Init_Binary()
-        self
               
     def run(self):
         #self.frame = cv.QueryFrame(self.capture)
@@ -85,6 +85,7 @@ class Vision (multiprocessing.Process):
                         print self.target
                     self.pipe_vision.send(self.target)
                 else:
+                    self.state=rec
                     print "clear out"
                     self.stuck_acc=0
                     self.target=0
@@ -110,16 +111,17 @@ class Vision (multiprocessing.Process):
                 else:
                     self.target=0
                     #2.2 check for obj
-                    self.FindCircle()
-                    """
-                    if self.target==0:
+                    self.FindLine()
+                    if self.state=='r':
+                        self.FindCircle()
+                    else:
                         self.FindWall()                
-                    #pass
-                    """
                 #print "3: ",time.time()
             else:
                 print "no img"
-                
+
+
+################################################# 1 Obj Detection #######################################
     def loadHSV(self):
         a = open("0.cal")
         line = a.readline().split(",")
@@ -241,6 +243,7 @@ class Vision (multiprocessing.Process):
             self.stuck_acc = 0
         #print self.stuck_acc,time.time()
         
+################################################# 2 calibration display #######################################
     def display(self):
         self.numobj = 0
         print self.wall,"draw wall",self.circles[0]
@@ -269,7 +272,6 @@ class Vision (multiprocessing.Process):
                     cv.Set2D(self.sample, self.blueline[i] - self.blue_thres, i, (0,0,0,0)) 
                     self.numobj = 1
 
-    # for calibration display
     def setThres(self):  
         self.r0min = cv.Scalar(self.hsv[0][0], self.hsv[0][1], self.hsv[0][2], 0)
         self.r0max = cv.Scalar(self.hsv[0][3], self.hsv[0][4], self.hsv[0][5], 0)
@@ -303,6 +305,7 @@ class Vision (multiprocessing.Process):
         cv.Or(self.thresholded, self.thresholded2, self.thresholded)                                           
  
 
+################################################# 3 embedded C code #######################################
     def GenCode(self):            
         #input:['mat', 'thres', 'ww', 'hh', 'label', 'count', 'labeltable', 'lhmin', 'lhmax', 'lwmin', 'lwmax', 'maxnumcl', 'thres_size', 'circle', 'blueline']
         self.codecircle = '''
@@ -479,7 +482,10 @@ connectedness:
         else if (circle[c*3]>2*ww/3){
             lhmin[0] = 3;}
         else{
-            lhmin[0] = 2;
+            if (circle[c*3+1]>3*hh/4){
+            lhmin[0] = 4;
+            }else{
+            lhmin[0] = 2;}
             }
     //end criteria of the circles
     circle[hindex2*3]=0;
@@ -573,11 +579,12 @@ connectedness:
             '''    
         #input :['mat', 'thres', 'b_thres', 'ww', 'hh', 'blueline']
         self.codeline = '''        
-        int hindex=0,windex=0,hstep=3*ww,count;
+        int hindex=0,windex=0,hstep=3*ww,count,bb;
         memset(blueline,0,sizeof(ushort)*ww);
         for (int j=0; j<ww; ++j){/*each width*/
         count=0;
         hindex=0;
+        bb=0;
         for (int i=0; i<hh; ++i){/*each height*/                     
                  if(mat[hindex+windex]>=thres[0] && mat[hindex+windex]<=thres[3] 
                  && mat[hindex+windex+1]>=thres[1] && mat[hindex+windex+1]<=thres[4]
@@ -585,8 +592,10 @@ connectedness:
                      count+=1;
                      if(count>=b_thres){
                      blueline[j]=i;
-                     break;
+                     bb=1;
                      }
+                 }else if(bb==1){
+                 break;
                  }
              hindex+=hstep;        
              }
