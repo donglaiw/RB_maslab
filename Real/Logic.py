@@ -20,6 +20,7 @@ class Logic(multiprocessing.Process):
         self.timeout_straight=5
         self.timeout_turn=7  #for 16 discrete turns
         self.timeout_nav=20
+        self.timeout_track=10
         self.s1=self.timeout_turn+self.timeout_nav
         self.timeout_s1=100
         self.st=0; 
@@ -143,7 +144,7 @@ class Logic(multiprocessing.Process):
         
         #2.track ball 
         if state>0:
-            self.TrackObj(obj,state)
+            self.TrackObj(obj,state,self.timeout_track)
 
     def RotFindObj(self,obj,timeout):        
         #ogj: wall or ball
@@ -194,20 +195,26 @@ class Logic(multiprocessing.Process):
         return state
 
    
-    def TrackObj(self,obj,state):
+    def TrackObj(self,obj,state,timeout):
         #1.suppose we stop in time and the ball is still in the vision                 
         self.AlignObj(state)
         while not self.SendState('c',('G',0)):True                
         #2 clear out stuck detection
         while not self.SendState('v','c'):True
         #3 go until wall collision or state=4(close to obj) by vision
-        state=self.SendState2('v','?')
+        pre_s=state
+        st=time.time()
         while state!=-1 and state!=4:
             self.AlignObj(state)
-            self.SendState('v','?')
-            print "vision send"
-            while not self.pipe_lv.poll(0.05):True      
-            state=self.pipe_lv.recv()
+            state=self.SendState2('v','?')
+            if state==0:
+                #lose track,undo last adjust until timeout
+                self.AlignObj(4-pre_s)
+                if time.time()-st>timeout:
+                    break
+            else:
+                pre_s=state
+
             print state,"receive"
         if state==4:
             if obj=='r':
@@ -217,12 +224,15 @@ class Logic(multiprocessing.Process):
                 #using IR for final fine align
                 self.DumpBall()
                 print "dump it "
+        elif state==-1:
+            self.SendState2('c','K')
+
 
     def AlignObj(self,state):
         if state!=2:
             if state==1:
                 self.SendState2('c','U')
-            else:
+            elif state==3:
                 self.SendState2('c','u')
     
     def DumpBall(self):
