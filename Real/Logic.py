@@ -230,9 +230,9 @@ class Logic(multiprocessing.Process):
     def AlignObj(self,state):
         if state!=2:
             if state==1:
-                self.SendState('c','U')
+                self.SendState('c',('U',1))
             elif state==3:
-                self.SendState('c','u')
+                self.SendState('c',('u',1))
     
     def DumpBall(self):
         #1. visually align the yellow wall after detected
