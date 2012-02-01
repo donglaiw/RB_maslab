@@ -345,7 +345,6 @@ void goTurn(int dir) {
 void goTurn2(int dir) {
     setMotor(100*dir,-100*dir);
     delay(100);
-    setMotor(0,0);
     }
 
 void goStraight(int speed) {
