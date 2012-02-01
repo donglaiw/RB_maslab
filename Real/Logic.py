@@ -152,6 +152,7 @@ class Logic(multiprocessing.Process):
         self.SendState('v','?')                                    
         while not self.pipe_lv.poll(0.05):True
         state=self.pipe_lv.recv()
+        print "state.."
         if state<=0:
             # get started
             self.SendState('c',("T",1))            

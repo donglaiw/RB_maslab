@@ -80,7 +80,7 @@ class Vision (multiprocessing.Process):
             if self.pipe_vision.poll(0.01):             
                 #command from logic
                 rec=self.pipe_vision.recv()             
-                #print "vision got sent",rec
+                print "vision got sent",rec
                 if rec=='?':
                     if self.target!=0:
                         print self.target
