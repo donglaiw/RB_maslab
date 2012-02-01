@@ -39,7 +39,7 @@ class Vision (multiprocessing.Process):
         self.thresholded2 =None
         self.dis_small = None        
 
-        self.circle_thres = self.sample_size[0] * self.sample_size[1] / 1000
+        self.circle_thres = self.sample_size[0] * self.sample_size[1] / 1600
         self.label = np.zeros(self.sample_size, np.uint16)
         self.maxnumcl = np.array([1000], np.uint16)
         self.count = np.zeros(self.maxnumcl[0], np.uint16)
