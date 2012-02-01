@@ -207,6 +207,7 @@ class Logic(multiprocessing.Process):
             while not self.pipe_lv.poll(0.05):True      
             state=self.pipe_lv.recv()
             self.AlignObj(state)
+            print state
         if state==4:
             if obj=='r':
                 time.sleep(1.5)
