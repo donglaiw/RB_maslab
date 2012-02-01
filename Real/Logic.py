@@ -182,7 +182,6 @@ class Logic(multiprocessing.Process):
             while not self.SendState('c',('N',0)):True
             st=time.time()
             while state ==0 and time.time()-st<=timeout:
-                """
                 #check vision
                 self.SendState('v','?')
                 while not self.pipe_lv.poll(0.05):True
@@ -196,6 +195,7 @@ class Logic(multiprocessing.Process):
                 elif state>=1: 
                     self.pipe_lc.send(('S',0))
                     break;   
+                """
                 """
                 pass
         return state
