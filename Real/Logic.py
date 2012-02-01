@@ -158,6 +158,7 @@ class Logic(multiprocessing.Process):
             # 1. Big Move            
             st=time.time()
             while state ==0 and time.time()-st<=timeout:
+                print "rot"
                 self.SendState('c',("T",1))
                 self.SendState('v','?')                                    
                 while not self.pipe_lv.poll(0.05):True
