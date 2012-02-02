@@ -11,5 +11,5 @@ player.Connect()
 #print state
 
 state=1
-player.TrackObj('r',state,10)
+player.TrackObj('r',state,5)
 player.Close()

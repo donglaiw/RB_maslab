@@ -35,34 +35,6 @@ class Logic(multiprocessing.Process):
             self.control.connect()
         self.control.start()
 
-    def run(self):             
-        while not self.SendState('c',('o',0)):True
-        while not self.SendState('v','c'):True
-        # stage 1: eat as many red balls as possible: navi+ball
-        """
-        while time.time()-self.st+self.s1<self.timeout_s1:
-            self.FindRedBall()
-        """
-        # stage 2: dedicate to find yellow wall
-        """
-        found=0
-        while found==0:
-            found=self.FindYellowWall()
-        """
-        # stage 3: stay around:one step out+ball+back
-
-        self.st=time.time()
-        #while not self.SendState('c',('N',False)):True
-        """
-        while True:
-            while not self.SendState('c',('A',True)):True
-        """
-        #self.GoUntilStuck()
-        while True:
-            #print "ball"
-            self.GetBall()
-            print "nav"
-            self.Nav2YellowWall()
     
     def Close(self):       
         while not self.SendState('c',('O',0)):True
@@ -104,7 +76,8 @@ class Logic(multiprocessing.Process):
             'W':Get Switch
             'K':Get Out of Stuck
             'O':stop ball rolleri
-            'S':stop it 
+            'S':stop it
+            'M':turn 180
             """
             if not self.pipe_control.poll(0.05):
                 self.pipe_lc.send(msg)
@@ -132,23 +105,63 @@ class Logic(multiprocessing.Process):
             tmp=self.pipe_lc.recv()
             print "sss.",tmp,len(tmp)
     
-
-
 ############################################2 Ball & Wall ######################################
+    #main strategy:
+    def run(self): 
+        # initialize rubberband and clear initial visual stuck detection
+        self.st=time.time()
+        while not self.SendState('c',('o',0)):True
+        while not self.SendState('v','c'):True
+        # stage 1: eat as many red balls as possible: navi+ball
+        """
+        while time.time()-self.st+self.s1<self.timeout_s1:
+            self.FindObj('r')
+        """
+        # stage 2: dedicate to find yellow wall
+        """
+        found=0
+        while found==0:
+            found=self.FindObj('y')
+        """
+        # stage 3: stay around:one step out+ball+back
+        """
+
+        if time.time()-self.st<20:        
+            #not much time left
+            self.DumpBall()
+        else:
+        while time.time()-self.st>20:        
+            pass
+        self.DumpBall()
+        """
+        
+        #while not self.SendState('c',('N',False)):True
+        """
+        while True:
+            while not self.SendState('c',('A',True)):True
+        """
+        #self.GoUntilStuck()
+        while True:
+            #print "ball"
+            self.GetBall()
+            print "nav"
+            self.Nav2YellowWall()
+
     def FindObj(self,obj):
-        #1. find ball
+        while not self.SendState('v',obj):True
+        #1. find obj
         state=self.RotFindObj(obj,self.timeout_turn)
         if state==0:            
             #nothing in the view
             state=self.NavFindObj(obj,self.timeout_nav)
         
-        #2.track ball 
+        #2.track obj 
         if state>0:
             self.TrackObj(obj,state,self.timeout_track)
+        return state
 
     def RotFindObj(self,obj,timeout):        
         #ogj: wall or ball
-        while not self.SendState('v',obj):True
         print "rot 2 find obj"
         state=self.SendState2('v','?')                                    
         print "state.."
@@ -175,7 +188,6 @@ class Logic(multiprocessing.Process):
     
     def NavFindObj(self,obj,timeout):
         #start navigation
-        while not self.SendState('v',obj):True
         state=self.SendState2('v','?')                                    
         print "nav 2 find obj"
         if state<=0:
@@ -195,9 +207,6 @@ class Logic(multiprocessing.Process):
                 elif state>=1: 
                     self.pipe_lc.send(('S',0))
                     break;   
-                """
-                """
-                pass
         return state
 
    
@@ -219,7 +228,6 @@ class Logic(multiprocessing.Process):
                     break
             else:
                 pre_s=state
-
             print state,"receive"
         if state==4:
             if obj=='r':
@@ -227,7 +235,7 @@ class Logic(multiprocessing.Process):
                 print "got it "
             else:
                 #using IR for final fine align
-                self.DumpBall()
+                self.SendState2('c','A')
                 print "dump it "
         elif state==-1:
             self.SendState2('c','K')

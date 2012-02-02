@@ -209,6 +209,12 @@ class Vision (multiprocessing.Process):
         weave.inline(self.codewall, ['mat', 'thres', 'w_thres', 'h_thres', 'ww', 'hh', 'blueline'])
         #print maxlen ,self.height_thres
         self.target = blueline[0]
+        if self.target>0 and self.saved==1:
+            print "found wall!!!!!!!!!!!!!!!!!!!"
+            self.state='y'
+            self.display()
+            cv.SaveImage(str(time.time())+"yy.jpg",self.sample)
+            self.saved=2
             
     def FindLine(self):
         #threshold+rowsum+findRect
@@ -289,11 +295,11 @@ class Vision (multiprocessing.Process):
     def ThresWall(self, state):        
         #need to process the latest one        
         if state == 'y':
-            #cv.InRangeS(self.hsv_frame, self.y0min, self.y0max, self.thresholded)
-            cv.InRangeS(self.dis_small, self.y0min, self.y0max, self.thres_small)
+            cv.InRangeS(self.hsv_frame, self.y0min, self.y0max, self.thresholded)
+            #cv.InRangeS(self.dis_small, self.y0min, self.y0max, self.thres_small)
         else:
-            #cv.InRangeS(self.hsv_frame, self.b0min, self.b0max, self.thresholded)
-            cv.InRangeS(self.dis_small, self.b0min, self.b0max, self.thres_small)
+            cv.InRangeS(self.hsv_frame, self.b0min, self.b0max, self.thresholded)
+            #cv.InRangeS(self.dis_small, self.b0min, self.b0max, self.thres_small)
 
     def ThresCircle(self):        
         #if self.frame is not None :
@@ -538,6 +544,9 @@ connectedness:
         if (wcount[1]>=w_thres/3){
            // in the middle
                 blueline[0]=2;
+            if(wcount[0]>w_thres/3 && wcount[2]>w_thres/3){
+                blueline[0]=4;
+                }
             }
         else{         
             if(wcount[0]>w_thres/3){
