@@ -37,6 +37,7 @@ int diff_thres=50; //simple filter out ir outlier
 char Gstate=' ';
 
 
+
 void setup() {
     Serial.begin(9600);           // set up Serial library at 9600 bps
     delay(1000); //Wait for it to initialize
