@@ -189,7 +189,7 @@ class Logic(multiprocessing.Process):
     def NavFindObj(self,obj,timeout):
         #start navigation
         state=self.SendState2('v','?')                                    
-        print "nav 2 find obj"
+        print "nav 2 find obj",state
         if state<=0:
             while not self.SendState('c',('N',0)):True
             st=time.time()
