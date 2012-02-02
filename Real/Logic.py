@@ -125,9 +125,11 @@ class Logic(multiprocessing.Process):
         # stage 2: dedicate to find yellow wall
         while not self.SendState('v','y'):True
         found=0
-        while found==0:
+        while found!=4:
             found=self.FindObj('y')
         print "obj found"
+        self.DumpBall()
+        print "dump"
         """
         """
         # stage 3: stay around:one step out+ball+back
@@ -157,7 +159,7 @@ class Logic(multiprocessing.Process):
         #2.track obj 
         if state>0:
             self.TrackObj(obj,state,self.timeout_track)
-        print "done tracking..."
+        print "done tracking...",state
         return state
 
     def RotFindObj(self,timeout):        

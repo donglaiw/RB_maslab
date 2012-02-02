@@ -77,7 +77,7 @@ class Calibrate():
        
     def displayImage(self):
         self.vision.frame = cv.QueryFrame(self.vision.capture)        
-        #self.vision.frame = cv.LoadImage("88.jpg")
+        #self.vision.frame = cv.LoadImage("gg.jpg")
         cv.Resize(self.vision.frame, self.vision.sample)        
         cv.CvtColor(self.vision.sample, self.vision.hsv_frame, cv.CV_BGR2HSV)       
         self.vision.hsv_np= np.asarray(self.vision.hsv_frame[:, :], dtype=np.uint8)
@@ -167,7 +167,7 @@ class Calibrate():
         a.close()
 
     def saveImg(self):
-        cv.SaveImage(str(time.time())+".jpg",self.vision.frame)
+        cv.SaveImage('ll'+str(time.time())+".jpg",self.vision.frame)
         
     def createHSV(self,index):
         framehsv = Frame(self.root)

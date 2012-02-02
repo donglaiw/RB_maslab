@@ -213,14 +213,20 @@ class Vision (multiprocessing.Process):
         weave.inline(self.codewall, ['mat', 'thres', 'w_thres', 'h_thres', 'ww', 'hh', 'blueline'])
         #print maxlen ,self.height_thres
         self.target = blueline[0]
-        if self.target>0 and self.saved==1:
-            print "found wall!!!!!!!!!!!!!!!!!!!"
+        if self.target>0 :
+            # check close?
+            self.FindWall2()
+            print "found wall!!!!!!!!!!!!!!!!!!!",self.wall
+            if self.wall!=[] and self.wall[1]>4*hh/5:
+                self.target=4
+            
+            if self.saved==0:
+                cv.SaveImage(str(time.time())+"ppy.jpg",self.sample)
+                self.state='y'
+                self.display()
+                cv.SaveImage(str(time.time())+"ppyy.jpg",self.sample)
+                self.saved=2
             """
-            cv.SaveImage(str(time.time())+"y.jpg",self.sample)
-            self.state='y'
-            self.display()
-            cv.SaveImage(str(time.time())+"yy.jpg",self.sample)
-            self.saved=2
             """
             
     def FindLine(self):
@@ -551,9 +557,6 @@ connectedness:
         if (wcount[1]>=w_thres/3){
            // in the middle
                 blueline[0]=2;
-            if(wcount[0]>w_thres/3 && wcount[2]>w_thres/3){
-                blueline[0]=4;
-                }
             }
         else{         
             if(wcount[0]>w_thres/3){

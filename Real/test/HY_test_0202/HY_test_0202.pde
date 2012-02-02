@@ -19,6 +19,9 @@ Short Range: 4: front; 5:left;  6:right;
 #define L_IR 5
 #define R_IR 6
 #define S_IR 7
+//===============================
+#define Left_IR 3
+//===============================
 #define L_BP 24
 #define R_BP 30
 #define F_BP 26
@@ -30,8 +33,11 @@ CompactQik2s9v1 motor = CompactQik2s9v1(&mySerial, rstPin);
 
 int IR[4][2]= {{0,0},{0,0},{0,0},{0,0}}; //0:old val, 1: new val
 int prestate=-1,state=-1;
-int fb=0,fb_c=0,fb_thres=5;//front bolck
-int fb_begin=0, fb_c_begin=0;
+int fb=0,fb_c=0,fb_thres=5;//front block
+//==================================================
+int fb_begin=0, fb_c_begin=0; //At the beginning, need to check front IR in a different way
+int lb=0,lb_c=0,lb_thres=10;//At the beginning, need to check left IR
+//==================================================
 int rd=0,rd_c=0,rd_thres=5;//rightwall disappear
 int md=0,md_c=0;//middle of nowhere
 int diff_thres=50; //simple filter out ir outlier
@@ -48,86 +54,24 @@ void setup() {
     mySerial.begin(9600);
     motor.begin();
     motor.stopBothMotors();
-    
-     }
+        }
 
 
-void loop() {
-  switch(Gstate) {
-        case 'N':
-            //Navigation
-            Navigation();
-            break;
-        case 'S':
-            //Navigation
-            setMotor(0,0);
-            Gstate=' ';
-            break;
-        case 'T':
-            //Turn a small angle left
-            goTurn(-1);
-            Gstate=' ';
-            Serial.println("d");            
-            break;
-        case 't':
-			//Turn a small angle right
-            goTurn(1);
-            Gstate=' ';            
-         Serial.println("d");            
-            break;
-        case 'U':
-			//Tune a smaller angle left
-            goTurn2(-1);
-                        Gstate=' ';  
-                                 Serial.println("d");            
-            break;
-        case 'u':
-			//Tune a smaller angle right
-            goTurn2(1);
-                        Gstate=' ';  
-                                 Serial.println("d");            
-            break;
-        case 'G':
-            setMotor(100,100);//Go straight until stuck
-            Gstate=' ';  
-            break;
-        case 'A':
-			//Align Wall for throw ball
-            AlignWall();
-            //delay(5000);
-             Serial.println("d");            
-              delay(10);
-                          Gstate=' ';  
-            break;
-        case 'B':
-	//Throw Ball
-            DumpBall();
-            Serial.println("d");            
-            delay(10);
-            Gstate=' ';  
-            break;
-        case 'W':
-        //Get Switch
-            getSwitch();
-            break;
-        case 'K':
-		//Get Out of Stuck
-          getOutStuck();
-         Serial.println("d");            
-         delay(10);
-            Gstate=' ';  
-            break;
-        case 'O':
-          analogWrite(9,0);
-          break;    
-        case 'o':
-          analogWrite(9,255);
-          break;
-           }
 
-    if(Serial.available()){
-     Gstate= (char)Serial.read();
-    }
+void loop() 
+{
+  //setMotor(100,100);
+  /*
+  if (ccc==0){
+  AlignWall();
+  ccc=1;
+  }
+*/
+//=======================================
+  Navigation();
+//int val=analogRead(3);
+//Serial.println(val);
+//=======================================
 }
 
 int AlignWall(){
@@ -164,16 +108,35 @@ int AlignWall(){
   
   return aligned;
 }
+void serialEvent() {
+    // get the new byte:
+/*
+    Gstate= (char)Serial.read();
+     Serial.println("ppp");    
+     Serial.println(Gstate);
+
+     Serial.println("ahaha");
+*/  
+  }
 
 void Navigation()
 {
+  
      FrontBlock();
      FrontBlock_begin();
      RightDisappear();
+     LeftBlock();
      
-     if(rd==2)//In the middle of nowhere
+     if(rd==2)   //In the middle of nowhere
      {
-       if(fb==1 || fb_begin==1)
+//===============================================
+		//LeftBlock();
+		if(lb==1)
+		{
+			TurnBackward();
+}
+	//===================================================
+       else if(fb==1 || fb_begin==1)
        {
          //Turn Left
          goTurn60(-1);
@@ -337,6 +300,29 @@ void FrontBlock_begin()
     }
 
 
+
+void LeftBlock() 
+{
+    int val=getIr(Left_IR);
+  
+      if(val>350)
+      {
+        lb_c+=1;
+        if(lb_c>lb_thres) 
+        {
+            lb_c=0;
+            lb=1;
+        }
+      }
+    else {
+        lb=0;
+        lb_c=0;
+        }
+    }
+
+
+
+
 //Rule 1
 void FollowRightWall() {
     int val=getIr(R_IR);
@@ -398,6 +384,52 @@ void DumpBall() {
     servo.detach();
     }
 
+/*
+void AlignWall() {
+    int stuck=0;
+    setMotor(120,120);
+    int val_l=1;
+    int val_r=1;
+    while(stuck==0) {
+        val_l=digitalRead(26);
+        val_r=digitalRead(30);
+
+        if (val_l==0) {
+            stuck=1;
+            Serial.print("left");
+            Serial.println(val_l);
+            }
+        else if (val_r==0) {
+
+            Serial.print("right");
+            Serial.println(val_r);
+            stuck=1;
+            }
+
+        }
+
+    setMotor(0,0);
+    if (val_l==0) {
+        setMotor(-120,-120);
+        delay(200);
+        setMotor(-50,120);
+        delay(800);
+        setMotor(0,0);
+        }
+    else {
+        setMotor(-120,-120);
+        delay(200);
+        setMotor(120,-50);
+        delay(800);
+        setMotor(0,0);
+        }
+      setMotor(120,120);
+
+      delay(2000);
+
+    }
+
+*/
 void getOutStuck(){
   setMotor(-100,-100);
   delay(400);
@@ -419,7 +451,15 @@ void setMotor(int sp0,int sp1) {
         motor.motor1Reverse(-sp1);
         }
     }
-
+//===================================================
+void TurnBackward()
+{
+	setMotor(-120,-30);
+	delay(1000);
+setMotor(-0,0);
+delay(500);
+}
+//==========================================================
 void goTurn90(int dir) {
     setMotor(100*dir,-100*dir);
     delay(650);
@@ -440,9 +480,8 @@ void goTurn(int dir) {
 
 void goTurn2(int dir) {
     setMotor(100*dir,-100*dir);
-    delay(70);
-    setMotor(100,100);
-    delay(600);
+    delay(100);
+    setMotor(0,0);
     }
 
 void goStraight(int speed) {
@@ -485,9 +524,4 @@ void getDigital() {
     delay(10);
     }
 
-void getSwitch() {
-    int digitalData = digitalRead(22);
-    Serial.println(digitalData);
-    delay(100);
-    }
 
