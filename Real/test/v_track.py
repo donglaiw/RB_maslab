@@ -11,7 +11,7 @@ while not player.SendState('v','c'):True
 print "lllll"
 state=player.NavFindObj('r',100)
 print state
-
+time.sleep(10)
 """
 state=1
 player.TrackObj('r',state,5)
