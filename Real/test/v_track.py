@@ -6,6 +6,12 @@ player=ll.Logic(180)
 
 player.Connect()
 
+
+
+
+
+
+"""
 while not player.SendState('v','c'):True
 #state=player.RotFindObj('r',100)
 print "lllll"
@@ -15,5 +21,6 @@ print state
 state=1
 player.TrackObj('r',state,5)
 """
-"""
+
+
 player.Close()

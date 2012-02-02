@@ -113,9 +113,9 @@ class Logic(multiprocessing.Process):
         while not self.SendState('c',('o',0)):True
         while not self.SendState('v','c'):True
         # stage 1: eat as many red balls as possible: navi+ball
-        """
         while time.time()-self.st+self.s1<self.timeout_s1:
             self.FindObj('r')
+        """
         """
         # stage 2: dedicate to find yellow wall
         """
@@ -140,12 +140,6 @@ class Logic(multiprocessing.Process):
         while True:
             while not self.SendState('c',('A',True)):True
         """
-        #self.GoUntilStuck()
-        while True:
-            #print "ball"
-            self.GetBall()
-            print "nav"
-            self.Nav2YellowWall()
 
     def FindObj(self,obj):
         while not self.SendState('v',obj):True
