@@ -544,7 +544,7 @@ connectedness:
                 }   
             }
         }
-        //printf("ww:   %d,%d,%d,%f\\n",wcount[0],wcount[1],wcount[2],w_thres/3);
+        printf("ww:   %d,%d,%d,%f\\n",wcount[0],wcount[1],wcount[2],w_thres/3);
         if (wcount[1]>=w_thres/3){
            // in the middle
                 blueline[0]=2;
