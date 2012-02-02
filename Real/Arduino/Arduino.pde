@@ -344,7 +344,7 @@ void goTurn(int dir) {
 
 void goTurn2(int dir) {
     setMotor(100*dir,-100*dir);
-    delay(100);
+    delay(70);
     setMotor(60,60);
     delay(600);
     }
