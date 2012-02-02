@@ -281,7 +281,8 @@ class Vision (multiprocessing.Process):
                 self.numobj +=1
                 i+= 1
         elif self.state == 'y' or self.state == 'g':
-            self.numobj = self.w_count
+            #if self.state==''
+            self.numobj = (self.w_count,self.)
             if self.wall != []:
                 cv.Resize(self.sample,self.dis_small)
                 #print self.wall,"wooo"
