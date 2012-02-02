@@ -76,8 +76,8 @@ class Calibrate():
         frameimg.pack()
        
     def displayImage(self):
-        self.vision.frame = cv.QueryFrame(self.vision.capture)        
-        #self.vision.frame = cv.LoadImage("gg.jpg")
+        #self.vision.frame = cv.QueryFrame(self.vision.capture)        
+        self.vision.frame = cv.LoadImage("gg.jpg")
         cv.Resize(self.vision.frame, self.vision.sample)        
         cv.CvtColor(self.vision.sample, self.vision.hsv_frame, cv.CV_BGR2HSV)       
         self.vision.hsv_np= np.asarray(self.vision.hsv_frame[:, :], dtype=np.uint8)
@@ -85,7 +85,7 @@ class Calibrate():
         """
         """
         cv.SetData(self.vision.dis_small,self.vision.small.tostring())
-        cv.SaveImage("taa.jpg",self.vision.dis_small)
+        #cv.SaveImage("taa.jpg",self.vision.dis_small)
         if self.cali_type.get()==0:
             #red ball
             self.vision.ThresCircle()
@@ -134,9 +134,10 @@ class Calibrate():
         Radiobutton(frameradio, text="Calibrate Blue Wall", variable=self.cali_type, value=2,command=self.changeHSV()).pack(side=LEFT)
         frameradio.pack()
         """
-        Radiobutton(self.root, text="Calibrate Red Ball", variable=self.cali_type, value=0,command=self.changeHSV).pack(side=LEFT)
-        Radiobutton(self.root, text="Calibrate Yellow Wall", variable=self.cali_type, value=1,command=self.changeHSV).pack(side=LEFT)
-        Radiobutton(self.root, text="Calibrate Blue Wall", variable=self.cali_type, value=2,command=self.changeHSV).pack(side=LEFT)
+        Radiobutton(self.root, text="Red Ball", variable=self.cali_type, value=0,command=self.changeHSV).pack(side=LEFT)
+        Radiobutton(self.root, text="Yellow Wall", variable=self.cali_type, value=1,command=self.changeHSV).pack(side=LEFT)
+        Radiobutton(self.root, text="Blue Wall", variable=self.cali_type, value=2,command=self.changeHSV).pack(side=LEFT)
+        Radiobutton(self.root, text="Green Wall", variable=self.cali_type, value=3,command=self.changeHSV).pack(side=LEFT)
     
     def changeHSV(self):
         for j in range(12):
@@ -154,8 +155,15 @@ class Calibrate():
         
     def setHsv(self):
         #print "hh: set",self.cali_type.get()
+        """
         for i in xrange(12):
             self.vision.hsv[self.cali_type.get()][i]=int(self.hsvEntry[i].get().strip())
+        """
+        for i in xrange(8):
+            self.vision.hsv[self.cali_type.get()][i]=int(self.hsvEntry[i].get().strip())
+
+        for i in xrange(4):
+            self.vision.hsv[self.cali_type.get()][i+8]=self.vision.hsv[self.cali_type.get()][i+2]
         self.vision.setThres()            
         self.displayImage()
 
@@ -180,20 +188,22 @@ class Calibrate():
         self.hsvEntry[index*6+3] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6+3],width=3)
         self.hsvEntry[index*6+3].pack(side = LEFT)
         
-        Label(framehsv,text="S:").pack(side = LEFT)    
-        self.hsvEntry[index*6+1] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6+1],width=3)             
-        self.hsvEntry[index*6+1].pack(side = LEFT)
-        Label(framehsv,text="-").pack(side = LEFT)
-        self.hsvEntry[index*6+4] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6+4],width=3)              
-        self.hsvEntry[index*6+4].pack(side = LEFT)
+        if index==0:
+            Label(framehsv,text="S:").pack(side = LEFT)    
+            self.hsvEntry[index*6+1] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6+1],width=3)             
+            self.hsvEntry[index*6+1].pack(side = LEFT)
+            Label(framehsv,text="-").pack(side = LEFT)
+            self.hsvEntry[index*6+4] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6+4],width=3)              
+            self.hsvEntry[index*6+4].pack(side = LEFT)
         
-        Label(framehsv,text="V:").pack(side = LEFT)    
-        # Create an hsv1 Widget in framehsv
-        self.hsvEntry[index*6+2] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6+2],width=3)
-        self.hsvEntry[index*6+2].pack(side = LEFT)             
-        Label(framehsv,text="-").pack(side = LEFT)
-        self.hsvEntry[index*6+5] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6+5],width=3)
-        self.hsvEntry[index*6+5].pack(side = LEFT)              
+            Label(framehsv,text="V:").pack(side = LEFT)    
+            # Create an hsv1 Widget in framehsv
+            self.hsvEntry[index*6+2] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6+2],width=3)
+            self.hsvEntry[index*6+2].pack(side = LEFT)             
+            Label(framehsv,text="-").pack(side = LEFT)
+            self.hsvEntry[index*6+5] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6+5],width=3)
+            self.hsvEntry[index*6+5].pack(side = LEFT)              
+
         framehsv.pack()
 
     def quit(self):
