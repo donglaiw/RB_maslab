@@ -264,7 +264,7 @@ if __name__ == "__main__":
     #Open Ardiuno connection
     player.Connect()
     #Waiting for switch
-    #player.SwitchOn()
+    player.SwitchOn()
     #GO!GO!!GO!!!
     player.start()     
     st=time.time()
