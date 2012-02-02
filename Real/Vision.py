@@ -52,12 +52,12 @@ class Vision (multiprocessing.Process):
         #3.1 blue wall
         self.blueline = np.zeros(self.sample_size[0], np.uint16)
         self.blue_thres = int(0.01* self.sample_size[1])
-        print self.blue_thres
+        #print self.blue_thres
               
         #3.2. yellow wall
         self.wall = []
-        self.width_thres = 0.7 * self.small_size[0]
-        self.height_thres = 0.1 * self.small_size[1]        
+        self.width_thres = 0.8 * self.small_size[0]
+        self.height_thres = 0.01 * self.small_size[1]        
         
         #5. for stuck
         self.small = np.zeros(self.small_size, np.uint8)
@@ -204,22 +204,17 @@ class Vision (multiprocessing.Process):
         hh = self.small_size[1]
         w_thres = self.width_thres
         h_thres = self.height_thres
-        s_p = np.uint8([100, 100])
-        e_p = np.uint8([100, 100])
-        maxlen = np.zeros(2, np.uint8)        
+        blueline=self.blueline/self.step
         #print thres
-        weave.inline(self.codewall, ['mat', 'thres', 'w_thres', 'h_thres', 'ww', 'hh', 's_p', 'e_p', 'maxlen'])
+        weave.inline(self.codewall, ['mat', 'thres', 'w_thres', 'h_thres', 'ww', 'hh', 'blueline'])
         #print maxlen ,self.height_thres
-        if maxlen[1] >= self.height_thres:
-            self.wall = (s_p[1], e_p[1])
-            self.target = e_p[0]
-            print "wall found!!!!!!!!!!!",self.target
+        self.target = blueline[0]
+        if self.target>0 and self.saved==1:
+            print "found wall!!!!!!!!!!!!!!!!!!!"
             self.state='y'
             self.display()
             cv.SaveImage(str(time.time())+"yy.jpg",self.sample)
-        else:
-            self.wall = []
-            self.target = 0
+            self.saved=2
             
     def FindLine(self):
         #threshold+rowsum+findRect
@@ -252,7 +247,6 @@ class Vision (multiprocessing.Process):
 ################################################# 2 calibration display #######################################
     def display(self):
         self.numobj = 0
-        print self.wall,"draw wall",self.circles[0]
         if self.state == 'r':
             self.numobj = 0
             i=0
@@ -296,13 +290,16 @@ class Vision (multiprocessing.Process):
         self.thresholded = cv.CreateImage(self.sample_size, cv.IPL_DEPTH_8U, 1)
         self.thresholded2 = cv.CreateImage(self.sample_size, cv.IPL_DEPTH_8U, 1)
         self.dis_small = cv.CreateImage(self.small_size[:2], cv.IPL_DEPTH_8U, 3)        
+        self.thres_small = cv.CreateImage(self.small_size[:2], cv.IPL_DEPTH_8U, 1)
 
     def ThresWall(self, state):        
         #need to process the latest one        
         if state == 'y':
             cv.InRangeS(self.hsv_frame, self.y0min, self.y0max, self.thresholded)
+            #cv.InRangeS(self.dis_small, self.y0min, self.y0max, self.thres_small)
         else:
             cv.InRangeS(self.hsv_frame, self.b0min, self.b0max, self.thresholded)
+            #cv.InRangeS(self.dis_small, self.b0min, self.b0max, self.thres_small)
 
     def ThresCircle(self):        
         #if self.frame is not None :
@@ -310,6 +307,23 @@ class Vision (multiprocessing.Process):
         cv.InRangeS(self.hsv_frame, self.r1min, self.r1max, self.thresholded2)
         cv.Or(self.thresholded, self.thresholded2, self.thresholded)                                           
  
+    def FindWall2(self):
+        #threshold+rowsum+findRect
+        mat = self.small
+        thres = np.uint8(self.hsv[1])
+        ww = self.small_size[0]            
+        hh = self.small_size[1]
+        w_thres = self.width_thres
+        h_thres = self.height_thres
+        s_p = np.uint8([100, 100])
+        e_p = np.uint8([100, 100])
+        maxlen = np.zeros(2, np.uint8)       
+        blueline=self.blueline/self.step
+        weave.inline(self.codewall2, ['mat', 'thres', 'w_thres', 'h_thres', 'ww', 'hh', 's_p', 'e_p', 'maxlen','blueline'])
+        if maxlen[1] >= self.height_thres:
+            self.wall = (s_p[1], e_p[1])
+        else:
+            self.wall = []
 
 ################################################# 3 embedded C code #######################################
     def GenCode(self):            
@@ -424,7 +438,7 @@ connectedness:
                     count[ntable]    = 1;                    
                 } 
             }                                  
-            hindex+=ww*3; 
+            hindex+=hstep; 
             hindex2+=ww;
     }        
          windex+=3;  
@@ -496,13 +510,64 @@ connectedness:
     //end criteria of the circles
     circle[hindex2*3]=0;
         '''        
-        #input:['mat', 'thres', 'w_thres', 'h_thres', 'ww', 'hh', 's_p', 'e_p', 'maxlen','step']
+        #input:['mat', 'thres', 'w_thres', 'h_thres', 'ww', 'hh', 's_p', 'e_p', 'maxlen','step','blueline']
         self.codewall = '''
+        int kill=0,rowsum=0,hindex=0,windex=0,hstep=3*ww;
+        int wcount[3] ={0,0,0};
+        int range[4] ={0,(int)ww/3,(int)2*ww/3,ww};
+    
+        for (int k=0; k<3; ++k){
+
+        for (int j=range[k]; j<range[k+1]; ++j){/*each width*/
+             hindex=hstep*blueline[j];                             
+             rowsum=0;
+        for (int i=blueline[j]; i<hh; ++i){/*each height*/
+            if(mat[hindex+windex]>=thres[0] && mat[hindex+windex]<=thres[3] 
+                 && mat[hindex+windex+1]>=thres[1] && mat[hindex+windex+1]<=thres[4]
+                 && mat[hindex+windex+2]>=thres[2] && mat[hindex+windex+2]<=thres[5]){
+                     rowsum+=1;
+                 }
+             hindex+=hstep;             
+             }
+             windex+=3;
+             /*
+             if (rowsum>0){
+             printf("cc %d,%d,%d,%d,%d\\n",j,k,blueline[j],rowsum,windex);
+             }
+             */
+             if (rowsum>=h_thres){                    
+               wcount[k]+=1;
+                }   
+            }
+        }
+        //printf("ww:   %d,%d,%d,%f\\n",wcount[0],wcount[1],wcount[2],w_thres/3);
+        if (wcount[1]>=w_thres/3){
+           // in the middle
+                blueline[0]=2;
+            if(wcount[0]>w_thres/3 && wcount[2]>w_thres/3){
+                blueline[0]=4;
+                }
+            }
+        else{         
+            if(wcount[0]>w_thres/3){
+                blueline[0]=1;
+            }else if (wcount[2]>w_thres/3){
+                blueline[0]=3;
+            }else{
+                blueline[0]=0;
+            
+            }        
+        }
+
+        '''
+        #input:['mat', 'thres', 'w_thres', 'h_thres', 'ww', 'hh', 's_p', 'e_p', 'maxlen','step']
+        self.codewall2 = '''
         int kill=0,rowsum=0,hindex=0,windex=0,hstep=3*ww;
         for (int i=0; i<hh; ++i){/*each height*/
              rowsum=0;
              windex=0;
              //printf("ww %d,%d,%d\\n",thres[0],thres[1],thres[2]);
+             rowsum=0;
              for (int j=0; j<ww; ++j){/*each width*/
                  if(mat[hindex+windex]>=thres[0] && mat[hindex+windex]<=thres[3] 
                  && mat[hindex+windex+1]>=thres[1] && mat[hindex+windex+1]<=thres[4]
