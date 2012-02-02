@@ -10,7 +10,6 @@ class Vision (multiprocessing.Process):
         #1. process communication
         multiprocessing.Process.__init__(self)  
         self.pipe_vision = pipe
-        self.state = 'r'
         self.target = 0
 
         #2. image caputuring
@@ -28,7 +27,7 @@ class Vision (multiprocessing.Process):
         self.step=self.sample_size[0]/self.small_size[0]
         self.hsv = [[0] * 12] * 4        
         self.loadHSV()
-        self.state='r'
+        self.state='y'
 
         #3. for circle
         self.sample = cv.CreateImage(self.sample_size, cv.IPL_DEPTH_8U, 3)        
@@ -56,18 +55,19 @@ class Vision (multiprocessing.Process):
               
         #3.2. yellow/green wall
         self.wall = []
-        self.width_thres_y = 0.8 * self.small_size[0]
+        self.width_thres_y = 0.7 * self.small_size[0]
         self.width_thres_g = 0.05 * self.small_size[0]
-        self.height_thres = 0.01 * self.small_size[1]        
-        self.wall_result=np.zeros(3, np.uint8)
+        self.height_thres = 0.06 * self.small_size[1]        
+        self.w_count=np.zeros(3, np.uint8)
+
 
         #5. for stuck
         self.small = np.zeros(self.small_size, np.uint8)
-        self.same_thres = 10
+        self.same_thres = 15
         self.diff_count = np.zeros(1, np.uint16)
         self.stuck_thres = self.small_size[0] * self.small_size[1] / 100
         self.stuck_acc=0
-        self.stuck_acc_thres=20
+        self.stuck_acc_thres=10
         
         #6. set C-code
         self.GenCode()
@@ -99,7 +99,7 @@ class Vision (multiprocessing.Process):
                     self.stuck_acc=0
                     self.target=0
 
-            #print "0: " ,time.time()
+            #print "0: " ,self.state
             #2. vision process
             self.frame = cv.QueryFrame(self.capture)
             #print "111: " ,time.time()
@@ -124,7 +124,7 @@ class Vision (multiprocessing.Process):
                     if self.state=='r':
                         self.FindCircle()
                     else:
-                        self.FindWall()                
+                        self.FindWall('y')                
                 #print "3: ",time.time()
             else:
                 print "no img"
@@ -179,8 +179,8 @@ class Vision (multiprocessing.Process):
         #print count
         #print circle[0],circle[1],circle[2]
         #print self.circles[0],self.circles[1]
-        self.target=lhmin[0]
-        if self.target>0 and self.saved==0:
+        self.target=lhmin[0]        
+        if self.target>0:
             print "found ball!!!!!!!!!!!!!!!!!!!",time.time()               
             """
             cv.SaveImage(str(time.time())+"r.jpg",self.sample)
@@ -204,7 +204,7 @@ class Vision (multiprocessing.Process):
             w_thres = self.width_thres_y
         else:
             thres = np.uint8(self.hsv[3])
-            w_thres = self.width_thres_b
+            w_thres = self.width_thres_g
 
         ww = self.small_size[0]            
         hh = self.small_size[1]
@@ -215,8 +215,14 @@ class Vision (multiprocessing.Process):
         weave.inline(self.codewall, ['mat', 'thres', 'w_thres', 'h_thres', 'ww', 'hh', 'blueline','w_count'])
         #print maxlen ,self.height_thres
         self.target = blueline[0]
+        #print "wall: ",w_count,self.target,w_thres/3
+        if self.target>0:
+            print "found wall!!!!!!!!!!!!!!!!!!!",self.wall
+        
+        
+        """
         if self.target>0 :
-            if obj=='y':
+            if opt=='y':
                 # check yellow closer?
                 self.FindWall2(opt)
                 print "found wall!!!!!!!!!!!!!!!!!!!",self.wall
@@ -224,13 +230,13 @@ class Vision (multiprocessing.Process):
                     self.target=4
             
             if self.saved==0:
-                cv.SaveImage(str(time.time())+"ppy.jpg",self.small)
-                self.state=obj
+                cv.SaveImage(str(time.time())+"kkppy.jpg",self.small)
+                self.state=opt
                 self.display()
-                cv.SaveImage(str(time.time())+"ppyy.jpg",self.small)
+                cv.SaveImage(str(time.time())+"kkppyy.jpg",self.small)
                 self.saved=2
-            """
-            """
+         """
+        
             
     def FindLine(self):
         #threshold+rowsum+findRect
@@ -329,13 +335,17 @@ class Vision (multiprocessing.Process):
         cv.InRangeS(self.hsv_frame, self.r1min, self.r1max, self.thresholded2)
         cv.Or(self.thresholded, self.thresholded2, self.thresholded)                                           
  
-    def FindWall2(self):
+    def FindWall2(self,opt):
         #threshold+rowsum+findRect
         mat = self.small
-        thres = np.uint8(self.hsv[1])
+        if opt=='y':
+            thres = np.uint8(self.hsv[1])
+            w_thres = self.width_thres_y
+        else:
+            w_thres = self.width_thres_g
+            thres = np.uint8(self.hsv[3])
         ww = self.small_size[0]            
         hh = self.small_size[1]
-        w_thres = self.width_thres
         h_thres = self.height_thres
         s_p = np.uint8([100, 100])
         e_p = np.uint8([100, 100])
@@ -536,6 +546,7 @@ connectedness:
         self.codewall = '''
         int kill=0,rowsum=0,hindex=0,windex=0,hstep=3*ww;
         int range[4] ={0,(int)ww/3,(int)2*ww/3,ww};
+        memset(w_count,0,sizeof(ushort)*3);
     
         for (int k=0; k<3; ++k){
 
@@ -564,12 +575,16 @@ connectedness:
         //printf("ww:   %d,%d,%d,%f\\n",w_count[0],w_count[1],w_count[2],w_thres/3);
         if (w_count[1]>=w_thres/3){
            // in the middle
+        if (w_count[0]>=w_thres/3&&w_count[2]>=w_thres/3){
+                blueline[0]=4;
+              }else{
                 blueline[0]=2;
+                }
             }
         else{         
             if(w_count[0]>w_thres/3){
                 blueline[0]=1;
-            }else if (wcount[2]>w_thres/3){
+            }else if (w_count[2]>w_thres/3){
                 blueline[0]=3;
             }else{
                 blueline[0]=0;

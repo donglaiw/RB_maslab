@@ -39,14 +39,12 @@ int rd=0,rd_c=0,rd_thres=5;//rightwall disappear
 int md=0,md_c=0;//middle of nowhere
 int diff_thres=50; //simple filter out ir outlier
 
-
 int fl_flag=0, fl_c=0, fl_thres=1; //Check front left
 int fr_flag=0, fr_c=0, fr_thres=1; //Check front right
 
-
 int counter=0;
 
-char Gstate=' ';
+char Gstate='N';
 int ccc=0;
 
 
@@ -63,45 +61,22 @@ void setup() {
 
 
 void loop() {
-  if(ccc==0){
-    //TurnBackward();
-    }
-/*  
-  int val_l=analogRead(R_IR);
-  int val_r=analogRead(L_IR);
-   int val_e=analogRead(Left_IR);
-  Serial.println("R");
- 
-  Serial.println(val_l);
-  Serial.println("L");
- 
-    Serial.println(val_r);
-  Serial.println("Left");
- 
-        Serial.println(val_e);
-*/
   switch(Gstate) {
         case 'N':
-            //Navigation,persistent state
+            Serial.println(rd);
+            Serial.println(fb);
+            
+            //Navigation
             Navigation2();
             break;
         case 'C':
             //Backward
-            setMotor(-100,-100);
-            delay(200);
+            setMotor(-120,-120);
+            delay(300);
             Gstate=' ';
-            break;
-        case 'L':
-            //Try to align the wall lost from left 
-            goTurn90(-1);
-            setMotor(100,120);
-            delay(1300);
-            setMotor(0,0);
-            Gstate=' ';
-            Serial.println("d");            
             break;
         case 'S':
-            //Stop it
+            //Navigation
             setMotor(0,0);
             Gstate=' ';
             break;
@@ -131,7 +106,7 @@ void loop() {
          Serial.println("d");            
             break;
         case 'U':
-                CheckFrontLeft();
+		CheckFrontLeft();
 		CheckFrontRight();
 
 		if(fl_flag==1)
@@ -183,17 +158,17 @@ void loop() {
 		{
        			goTurn2(-1);
 		}
-		
-//Tune a smaller angle left
+			
+
+		//Tune a smaller angle left
             //goTurn2(-1);
-                        
-                        
             Gstate=' ';  
             Serial.println("d");            
             break;
-            
         case 'u':
-                CheckFrontLeft();
+			//Tune a smaller angle right
+            //goTurn2(1);
+            CheckFrontLeft();
 		CheckFrontRight();
 
 		if(fl_flag==1)
@@ -247,74 +222,13 @@ void loop() {
 		}
             
             
-        
-        
-			//Tune a smaller angle right
-            //goTurn2(1);
-                        Gstate=' ';  
-                                 Serial.println("d");            
+            
+            Gstate='u';  
+            Serial.println("d");            
             break;
         case 'G':
-             CheckFrontLeft();
-		CheckFrontRight();
-
-		if(fl_flag==1)
-		{
-       			if(fr_flag==0)
-       			{
-               //Go Back, Turn Right, Go Forward
-               			setMotor(-100,-100);
-               			delay(500);
-               			setMotor(110,-110);
-               			delay(300);
-               			setMotor(100,100);
-               			delay(500);
-                                setMotor(0,100);
-               			delay(200);
-       			}
-       			else
-       			{
-               //Go Back, Turn(1) (left), Go Forward
-               //goTurn(-1);
-               			setMotor(-100,-100);
-               			delay(500);
-               			setMotor(110,-110);
-               			delay(300);
-               			setMotor(100,100);
-               			delay(500);
-                                setMotor(0,100);
-               			delay(400);
-      			 }
-
-
-		}
-		else if(fr_flag==1)
-		{
-       // Go Back, Turn Left, Go Forward
-       //goTurn(-1);
-       //goTurn(-1);
-       			setMotor(-100,-100);
-       			delay(500);
-       			setMotor(-110,110);
-       			delay(200);
-       			setMotor(100,100);
-       			delay(500);
-                        setMotor(100,-100);
-                        delay(300);
-
-		}
-		else
-		{
-//       			goTurn2(-1);
-                    setMotor(120,120);//Go straight a little bit
-                    delay(300);
-
-		}
-            
-            
-            
-            //setMotor(120,120);//Go straight a little bit
-            //delay(300);
+            setMotor(120,120);//Go straight a little bit
+            delay(300);
             Gstate=' ';  
             break;
         case 'A':
@@ -377,34 +291,35 @@ int AlignWall(){
     }else {
       setMotor(100,-100);
     }
-      }else{
-      setMotor(0,0);
-      aligned=1;
-    }
-    }
-    delay(100);
-    setMotor(120,120);
-    delay(1000);
+    }else{
     setMotor(0,0);
-    
-    return aligned;
+    aligned=1;
   }
+  }
+  delay(100);
+  setMotor(120,120);
+  delay(1000);
+  setMotor(0,0);
   
-  
-  
-  void Navigation2()
-  {
-       FrontBlock();
-       FrontBlock_begin();
-       RightDisappear();
-       LeftBlock();
-      Serial.print("pppp");
-    Serial.println(rd);
-        Serial.print("qqqq");
-        Serial.print(lb);
+  return aligned;
+}
 
 
-    
+void Navigation()
+{
+     FrontBlock();
+     FrontBlock_begin();
+     RightDisappear();
+     LeftBlock();
+      
+      Serial.println('rd  ');
+      
+      Serial.println(rd);
+      
+      Serial.println('lb  ');
+      
+      Serial.println(lb);
+
      if(rd==2)//In the middle of nowhere
      {
        //Serial.print(rd);
@@ -425,6 +340,47 @@ int AlignWall(){
       // setMotor(0,0);
        }
 
+     }
+     else if(rd==1)//Right Wall Disappear
+     {
+         goUturn();
+     }
+     else if(fb==1)
+     {
+         goTurn60(-1);
+     }
+     else
+     {
+         FollowRightWall();
+     }
+
+
+}
+
+
+//Global variable
+//int counter=0;
+
+void Navigation2()
+{
+     FrontBlock();
+     FrontBlock_begin();
+     RightDisappear();
+     
+     if(rd==2)//In the middle of nowhere
+     {
+       if(fb==1 || fb_begin==1)
+       {
+         //Turn Left
+         goTurn60(-1);
+       }
+       else
+       {
+       //GoStraight()
+         setMotor(120,120);
+      // setMotor(0,0);
+       }
+      
      }
      else if(rd==1)//Right Wall Disappear
      {
@@ -446,56 +402,6 @@ int AlignWall(){
      
 
 }
-
-
-
-
-void Navigation()
-{
-     FrontBlock();
-     FrontBlock_begin();
-     RightDisappear();
-     LeftBlock();
-
-     if(rd==2)//In the middle of nowhere
-     {
-       //Serial.print(rd);
-       if(lb==1)
-       {
-         //Serial.print(lb);
-         TurnBackward();
-       }
-       else if(fb==1 || fb_begin==1)
-       {
-         //Turn Left
-         goTurn60(-1);
-       }
-       else
-       {
-       //GoStraight()
-         setMotor(120,120);
-      // setMotor(0,0);
-       }
-
-     }
-     else if(rd==1)//Right Wall Disappear
-     {
-         goUturn();
-     }
-     else if(fb==1)
-     {
-         goTurn60(-1);
-     }
-     else
-     {
-         FollowRightWall();
-     }
-
-
-}
-
-
-
 
 
 void goUturn()
@@ -689,24 +595,18 @@ void FollowRightWall() {
 
 void TurnBackward()
 {
-  setMotor(100,-100);
-  delay(1500);
-  setMotor(0,0);
-  //ccc=1;
+  goTurn90(1);
+  goTurn90(1);
+  goTurn60(-1);
+  //setMotor(0,0);
+  //delay(10000);
 }
 
 
 void LeftBlock()
 {
   int val=analogRead(Left_IR);
-  
-  
-      Serial.print("val  ");
-      Serial.print(val);
-            Serial.print("      ");
-   
-  
-  if(val>290)
+  if(val>250)
   {
       Serial.print("val  ");
       Serial.print(val);
@@ -727,12 +627,11 @@ void LeftBlock()
 
 }
 
-
 void CheckFrontLeft()
 {
    int val_l=analogRead(F_IR);
 
-   if(val_l>350)
+   if(val_l>250)
    {
        fl_c+=1;
        if(fl_c>fl_thres)
@@ -771,6 +670,7 @@ void CheckFrontRight()
 
 
 
+
 void DumpBall() {
     //don't want it on all time...
     servo.attach(7);
@@ -782,14 +682,15 @@ void DumpBall() {
     }
 
 void getOutStuck(){
-  setMotor(-100,-100);
-  delay(400);
+  setMotor(-120,-120);
+  delay(600);
+
     int val_rf=analogRead(R_IR);
     int val_lf=analogRead(Left_IR);
     if(val_rf>val_lf){
 goTurn90(-1);
 }else{
-goTurn90(f1);
+goTurn90(1);
 
 }
 
@@ -813,7 +714,7 @@ void setMotor(int sp0,int sp1) {
 
 void goTurn90(int dir) {
     setMotor(100*dir,-100*dir);
-    delay(700);
+    delay(650);
     setMotor(0,0);
     }
 

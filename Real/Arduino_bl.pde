@@ -24,8 +24,6 @@ Short Range: 4: front; 5:left;  6:right;
 #define F_BP 26
 
 
-#define Left_IR 3
-
 Servo servo;
 NewSoftSerial mySerial = NewSoftSerial(rxPin, txPin);
 CompactQik2s9v1 motor = CompactQik2s9v1(&mySerial, rstPin);
@@ -34,17 +32,9 @@ int IR[4][2]= {{0,0},{0,0},{0,0},{0,0}}; //0:old val, 1: new val
 int prestate=-1,state=-1;
 int fb=0,fb_c=0,fb_thres=5;//front bolck
 int fb_begin=0, fb_c_begin=0;
-int lb=0, lb_c=0,lb_thres=5;//left block
 int rd=0,rd_c=0,rd_thres=5;//rightwall disappear
 int md=0,md_c=0;//middle of nowhere
 int diff_thres=50; //simple filter out ir outlier
-
-
-int fl_flag=0, fl_c=0, fl_thres=1; //Check front left
-int fr_flag=0, fr_c=0, fr_thres=1; //Check front right
-
-
-int counter=0;
 
 char Gstate=' ';
 int ccc=0;
@@ -63,67 +53,22 @@ void setup() {
 
 
 void loop() {
-  if(ccc==0){
-    //TurnBackward();
-    }
-/*  
-  int val_l=analogRead(R_IR);
-  int val_r=analogRead(L_IR);
-   int val_e=analogRead(Left_IR);
-  Serial.println("R");
- 
-  Serial.println(val_l);
-  Serial.println("L");
- 
-    Serial.println(val_r);
-  Serial.println("Left");
- 
-        Serial.println(val_e);
-*/
   switch(Gstate) {
         case 'N':
-            //Navigation,persistent state
-            Navigation2();
-            break;
-        case 'C':
-            //Backward
-            setMotor(-100,-100);
-            delay(200);
-            Gstate=' ';
-            break;
-        case 'L':
-            //Try to align the wall lost from left 
-            goTurn90(-1);
-            setMotor(100,120);
-            delay(1300);
-            setMotor(0,0);
-            Gstate=' ';
-            Serial.println("d");            
+            //Navigation
+            Navigation();
             break;
         case 'S':
-            //Stop it
+            //Navigation
             setMotor(0,0);
             Gstate=' ';
             break;
         case 'T':
             //Turn a small angle left
-
-            LeftBlock();
-
-            if(lb==1)
-           //if (val_IR_l>350)
-            {
-              TurnBackward();
-            }
-            else
-            {
-            //Tune a smaller angle left
             goTurn(-1);
-            }
             Gstate=' ';
             Serial.println("d");            
-
-          break;
+            break;
         case 't':
 			//Turn a small angle right
             goTurn(1);
@@ -131,198 +76,28 @@ void loop() {
          Serial.println("d");            
             break;
         case 'U':
-                CheckFrontLeft();
-		CheckFrontRight();
-
-		if(fl_flag==1)
-		{
-       			if(fr_flag==0)
-       			{
-               //Go Back, Turn Right, Go Forward
-               			setMotor(-100,-100);
-               			delay(500);
-               			setMotor(110,-110);
-               			delay(300);
-               			setMotor(100,100);
-               			delay(500);
-                                setMotor(0,100);
-               			delay(200);
-       			}
-       			else
-       			{
-               //Go Back, Turn(-1) (left), Go Forward
-               //goTurn(-1);
-               			setMotor(-100,-100);
-               			delay(500);
-               			setMotor(-110,110);
-               			delay(300);
-               			setMotor(100,100);
-               			delay(500);
-                                setMotor(100,0);
-               			delay(400);
-      			 }
-
-
-		}
-		else if(fr_flag==1)
-		{
-       // Go Back, Turn Left, Go Forward
-       //goTurn(-1);
-       //goTurn(-1);
-       			setMotor(-100,-100);
-       			delay(500);
-       			setMotor(-110,110);
-       			delay(200);
-       			setMotor(100,100);
-       			delay(500);
-                        setMotor(100,-100);
-                        delay(300);
-
-		}
-		else
-		{
-       			goTurn2(-1);
-		}
-		
-//Tune a smaller angle left
-            //goTurn2(-1);
-                        
-                        
-            Gstate=' ';  
-            Serial.println("d");            
+			//Tune a smaller angle left
+            goTurn2(-1);
+                        Gstate=' ';  
+                                 Serial.println("d");            
             break;
-            
         case 'u':
-                CheckFrontLeft();
-		CheckFrontRight();
-
-		if(fl_flag==1)
-		{
-       			if(fr_flag==0)
-       			{
-               //Go Back, Turn Right, Go Forward
-               			setMotor(-100,-100);
-               			delay(500);
-               			setMotor(110,-110);
-               			delay(300);
-               			setMotor(100,100);
-               			delay(500);
-                                setMotor(0,100);
-               			delay(200);
-       			}
-       			else
-       			{
-               //Go Back, Turn(1) (left), Go Forward
-               //goTurn(-1);
-               			setMotor(-100,-100);
-               			delay(500);
-               			setMotor(110,-110);
-               			delay(300);
-               			setMotor(100,100);
-               			delay(500);
-                                setMotor(0,100);
-               			delay(400);
-      			 }
-
-
-		}
-		else if(fr_flag==1)
-		{
-       // Go Back, Turn Left, Go Forward
-       //goTurn(-1);
-       //goTurn(-1);
-       			setMotor(-100,-100);
-       			delay(500);
-       			setMotor(-110,110);
-       			delay(200);
-       			setMotor(100,100);
-       			delay(500);
-                        setMotor(100,-100);
-                        delay(300);
-
-		}
-		else
-		{
-       			goTurn2(-1);
-		}
-            
-            
-        
-        
 			//Tune a smaller angle right
-            //goTurn2(1);
+            goTurn2(1);
                         Gstate=' ';  
                                  Serial.println("d");            
             break;
         case 'G':
-             CheckFrontLeft();
-		CheckFrontRight();
-
-		if(fl_flag==1)
-		{
-       			if(fr_flag==0)
-       			{
-               //Go Back, Turn Right, Go Forward
-               			setMotor(-100,-100);
-               			delay(500);
-               			setMotor(110,-110);
-               			delay(300);
-               			setMotor(100,100);
-               			delay(500);
-                                setMotor(0,100);
-               			delay(200);
-       			}
-       			else
-       			{
-               //Go Back, Turn(1) (left), Go Forward
-               //goTurn(-1);
-               			setMotor(-100,-100);
-               			delay(500);
-               			setMotor(110,-110);
-               			delay(300);
-               			setMotor(100,100);
-               			delay(500);
-                                setMotor(0,100);
-               			delay(400);
-      			 }
-
-
-		}
-		else if(fr_flag==1)
-		{
-       // Go Back, Turn Left, Go Forward
-       //goTurn(-1);
-       //goTurn(-1);
-       			setMotor(-100,-100);
-       			delay(500);
-       			setMotor(-110,110);
-       			delay(200);
-       			setMotor(100,100);
-       			delay(500);
-                        setMotor(100,-100);
-                        delay(300);
-
-		}
-		else
-		{
-//       			goTurn2(-1);
-                    setMotor(120,120);//Go straight a little bit
-                    delay(300);
-
-		}
-            
-            
-            
-            //setMotor(120,120);//Go straight a little bit
-            //delay(300);
+            setMotor(100,100);//Go straight until stuck
             Gstate=' ';  
             break;
         case 'A':
 			//Align Wall for throw ball
             AlignWall();
+            //delay(5000);
              Serial.println("d");            
               delay(10);
-              Gstate=' ';  
+                          Gstate=' ';  
             break;
         case 'B':
 	//Throw Ball
@@ -377,43 +152,28 @@ int AlignWall(){
     }else {
       setMotor(100,-100);
     }
-      }else{
-      setMotor(0,0);
-      aligned=1;
-    }
-    }
-    delay(100);
-    setMotor(120,120);
-    delay(1000);
+    }else{
     setMotor(0,0);
-    
-    return aligned;
+    aligned=1;
   }
+  }
+  delay(100);
+  setMotor(120,120);
+  delay(1000);
+  setMotor(0,0);
   
-  
-  
-  void Navigation2()
-  {
-       FrontBlock();
-       FrontBlock_begin();
-       RightDisappear();
-       LeftBlock();
-      Serial.print("pppp");
-    Serial.println(rd);
-        Serial.print("qqqq");
-        Serial.print(lb);
+  return aligned;
+}
 
-
-    
+void Navigation()
+{
+     FrontBlock();
+     FrontBlock_begin();
+     RightDisappear();
+     
      if(rd==2)//In the middle of nowhere
      {
-       //Serial.print(rd);
-       if(lb==1)
-       {
-         //Serial.print(lb);
-         TurnBackward();
-       }
-       else if(fb==1 || fb_begin==1)
+       if(fb==1 || fb_begin==1)
        {
          //Turn Left
          goTurn60(-1);
@@ -424,19 +184,14 @@ int AlignWall(){
          setMotor(120,120);
       // setMotor(0,0);
        }
-
+      
      }
      else if(rd==1)//Right Wall Disappear
      {
-     	if(counter<4)
-     	{
          goUturn();
-         counter+=1;
-        }
      }
      else if(fb==1)
      {
-     	 counter=0;
          goTurn60(-1);
      }
      else
@@ -446,58 +201,6 @@ int AlignWall(){
      
 
 }
-
-
-
-
-void Navigation()
-{
-     FrontBlock();
-     FrontBlock_begin();
-     RightDisappear();
-     LeftBlock();
-
-     if(rd==2)//In the middle of nowhere
-     {
-       //Serial.print(rd);
-       if(lb==1)
-       {
-         //Serial.print(lb);
-         TurnBackward();
-       }
-       else if(fb==1 || fb_begin==1)
-       {
-         //Turn Left
-         goTurn60(-1);
-       }
-       else
-       {
-       //GoStraight()
-         setMotor(120,120);
-      // setMotor(0,0);
-       }
-
-     }
-     else if(rd==1)//Right Wall Disappear
-     {
-         goUturn();
-     }
-     else if(fb==1)
-     {
-         goTurn60(-1);
-     }
-     else
-     {
-         FollowRightWall();
-     }
-
-
-}
-
-
-
-
-
 void goUturn()
 {
     while(rd==1)
@@ -557,8 +260,8 @@ void goUturn()
 //rd=2--->In the middle of nowhere
 void RightDisappear() 
 {
-    int val_front=analogRead(R_IR);
-    int val_rear=analogRead(L_IR);
+    int val_front=getIr(R_IR);
+    int val_rear=getIr(L_IR);
     
     if(val_front<150) 
     {
@@ -596,8 +299,8 @@ void RightDisappear()
 }
 //Rule 2
 void FrontBlock() {
-    int val2=analogRead(F_IR);
-    int val3=analogRead(S_IR);
+    int val2=getIr(F_IR);
+    int val3=getIr(S_IR);
     //if(val2 > 500||(val3>500)) {
       if(val2>425){
         fb_c+=1;
@@ -615,8 +318,8 @@ void FrontBlock() {
 
 void FrontBlock_begin() 
 {
-    int val2=analogRead(F_IR);
-    int val3=analogRead(S_IR);
+    int val2=getIr(F_IR);
+    int val3=getIr(S_IR);
     //if(val2 > 500||(val3>500)) {
       if(val2>425 || val3>500)
       {
@@ -636,8 +339,8 @@ void FrontBlock_begin()
 
 //Rule 1
 void FollowRightWall() {
-    int val=analogRead(R_IR);
-    int val3=analogRead(S_IR);
+    int val=getIr(R_IR);
+    int val3=getIr(S_IR);
     
     if(val3>425)
     {
@@ -685,92 +388,6 @@ void FollowRightWall() {
         }
     }
 
-
-
-void TurnBackward()
-{
-  setMotor(100,-100);
-  delay(1500);
-  setMotor(0,0);
-  //ccc=1;
-}
-
-
-void LeftBlock()
-{
-  int val=analogRead(Left_IR);
-  
-  
-      Serial.print("val  ");
-      Serial.print(val);
-            Serial.print("      ");
-   
-  
-  if(val>290)
-  {
-      Serial.print("val  ");
-      Serial.print(val);
-            Serial.print("      ");
-      lb_c+=1;
-            Serial.println(lb_c);
-      if(lb_c>lb_thres)
-      {
-          lb_c=0;
-          lb=1;
-      }
-  }
-  else
-  {
-      lb=0;
-      lb_c=0;
-  }
-
-}
-
-
-void CheckFrontLeft()
-{
-   int val_l=analogRead(F_IR);
-
-   if(val_l>350)
-   {
-       fl_c+=1;
-       if(fl_c>fl_thres)
-       {
-           fl_c=0;
-           fl_flag=1;
-       }
-   }
-   else
-   {
-       fl_flag=0;
-       fl_c=0;
-   }
-}
-
-
-void CheckFrontRight()
-{
-   int val_r=analogRead(S_IR);
-
-   if(val_r>350)
-   {
-       fr_c+=1;
-       if(fr_c>fr_thres)
-       {
-           fr_c=0;
-           fr_flag=1;
-       }
-   }
-   else
-   {
-       fr_flag=0;
-       fr_c=0;
-   }
-}
-
-
-
 void DumpBall() {
     //don't want it on all time...
     servo.attach(7);
@@ -784,15 +401,7 @@ void DumpBall() {
 void getOutStuck(){
   setMotor(-100,-100);
   delay(400);
-    int val_rf=analogRead(R_IR);
-    int val_lf=analogRead(Left_IR);
-    if(val_rf>val_lf){
-goTurn90(-1);
-}else{
-goTurn90(f1);
-
-}
-
+  goTurn90(1);
   
 }
 
@@ -813,7 +422,7 @@ void setMotor(int sp0,int sp1) {
 
 void goTurn90(int dir) {
     setMotor(100*dir,-100*dir);
-    delay(700);
+    delay(650);
     setMotor(0,0);
     }
 
@@ -850,6 +459,17 @@ void goStraight(int speed) {
 
 
 
+int getIr(int port) {
+    int tmp=analogRead(port);
+    //IR<200 may be degenerate
+    //for IR>200, we want the change to be smooth
+//  if (IR[port-4][1]<200 ||abs(tmp-IR[port-4][1])<diff_thres)
+//    {
+    IR[port-4][0]=IR[port-4][1];
+    IR[port-4][1]=tmp;
+//    }
+    return IR[port-4][1];
+    }
 
 //---------------
 void getAnalog() {

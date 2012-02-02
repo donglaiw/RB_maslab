@@ -35,7 +35,7 @@ class MaxLengthEntry(Entry):
         if self.maxlength and value!='':
             #print value,value[:self.maxlength],[value[:self.maxlength],255],min([value[:self.maxlength],255]),max([0,min([value[:self.maxlength],255])])
             #print self.maxlength,value[:self.maxlength]
-            value = max([0,min([int(value[:self.maxlength]),400])])
+            value = max([0,min([int(value[:self.maxlength]),255])])
         return value
          
 class Calibrate():
@@ -47,7 +47,7 @@ class Calibrate():
         self.objLabel=Label()        
         self.vision=vv.Vision(None)
         self.vision.Init_Binary()
-        self.state=['r','y','b']
+        self.state=['r','y','b','g']
         self.setUp()
 
            
@@ -76,8 +76,8 @@ class Calibrate():
         frameimg.pack()
        
     def displayImage(self):
-        #self.vision.frame = cv.QueryFrame(self.vision.capture)        
-        self.vision.frame = cv.LoadImage("gg.jpg")
+        self.vision.frame = cv.QueryFrame(self.vision.capture)        
+        #self.vision.frame = cv.LoadImage("gg.jpg")
         cv.Resize(self.vision.frame, self.vision.sample)        
         cv.CvtColor(self.vision.sample, self.vision.hsv_frame, cv.CV_BGR2HSV)       
         self.vision.hsv_np= np.asarray(self.vision.hsv_frame[:, :], dtype=np.uint8)
@@ -93,8 +93,13 @@ class Calibrate():
         elif self.cali_type.get()==1:
             #yellow wall
             self.vision.ThresWall('y')
-            self.vision.FindWall()
-            self.vision.FindWall2()
+            self.vision.FindWall('y')
+            self.vision.FindWall2('y')
+        elif self.cali_type.get()==3:
+            #yellow wall
+            self.vision.ThresWall('g')
+            self.vision.FindWall('g')
+            self.vision.FindWall2('g')
         else:
             #blue line
             self.vision.ThresWall('b')
@@ -103,7 +108,7 @@ class Calibrate():
         self.vision.state=self.state[self.cali_type.get()]
         self.vision.display()
         if self.vision.frame!=None:
-            if self.cali_type.get()==1:
+            if self.cali_type.get()==1 or self.cali_type.get()==3:
                 img_pil = Image.fromstring("RGB", self.vision.small_size[:2], self.vision.dis_small.tostring())
                 img_pil2 = Image.fromstring("L", cv.GetSize(self.vision.thresholded), self.vision.thresholded.tostring())
             else:
@@ -160,6 +165,7 @@ class Calibrate():
             self.vision.hsv[self.cali_type.get()][i]=int(self.hsvEntry[i].get().strip())
         """
         for i in xrange(8):
+            #print i,self.hsvEntry[i].get().strip()
             self.vision.hsv[self.cali_type.get()][i]=int(self.hsvEntry[i].get().strip())
 
         for i in xrange(4):
@@ -190,18 +196,21 @@ class Calibrate():
         
         if index==0:
             Label(framehsv,text="S:").pack(side = LEFT)    
-            self.hsvEntry[index*6+1] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6+1],width=3)             
+        self.hsvEntry[index*6+1] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6+1],width=3)             
+        if index==0:
             self.hsvEntry[index*6+1].pack(side = LEFT)
             Label(framehsv,text="-").pack(side = LEFT)
-            self.hsvEntry[index*6+4] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6+4],width=3)              
-            self.hsvEntry[index*6+4].pack(side = LEFT)
-        
+        self.hsvEntry[index*6+4] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6+4],width=3)              
+        if index==0:
+            self.hsvEntry[index*6+4].pack(side = LEFT) 
             Label(framehsv,text="V:").pack(side = LEFT)    
-            # Create an hsv1 Widget in framehsv
-            self.hsvEntry[index*6+2] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6+2],width=3)
+            # Create an hsv1 Widget in framehsv            
+        self.hsvEntry[index*6+2] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6+2],width=3)
+        if index==0:
             self.hsvEntry[index*6+2].pack(side = LEFT)             
             Label(framehsv,text="-").pack(side = LEFT)
-            self.hsvEntry[index*6+5] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6+5],width=3)
+        self.hsvEntry[index*6+5] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6+5],width=3)
+        if index==0:
             self.hsvEntry[index*6+5].pack(side = LEFT)              
 
         framehsv.pack()

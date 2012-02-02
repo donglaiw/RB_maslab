@@ -19,6 +19,8 @@ Short Range: 4: front; 5:left;  6:right;
 #define L_IR 5
 #define R_IR 6
 #define S_IR 7
+#define Left_IR 3
+
 #define L_BP 24
 #define R_BP 30
 #define F_BP 26
@@ -32,11 +34,17 @@ int IR[4][2]= {{0,0},{0,0},{0,0},{0,0}}; //0:old val, 1: new val
 int prestate=-1,state=-1;
 int fb=0,fb_c=0,fb_thres=5;//front bolck
 int fb_begin=0, fb_c_begin=0;
+int lb=0, lb_c=0,lb_thres=5;//left block
 int rd=0,rd_c=0,rd_thres=5;//rightwall disappear
 int md=0,md_c=0;//middle of nowhere
 int diff_thres=50; //simple filter out ir outlier
 
-char Gstate=' ';
+int fl_flag=0, fl_c=0, fl_thres=2; //Check front left
+int fr_flag=0, fr_c=0, fr_thres=2; //Check front right
+
+int val_IR_l=100;
+
+char Gstate='U';
 int ccc=0;
 
 
@@ -53,6 +61,9 @@ void setup() {
 
 
 void loop() {
+ // int val=analogRead(3);
+   //        Serial.println(val);
+  int cc=0;
   switch(Gstate) {
         case 'N':
             //Navigation
@@ -64,8 +75,22 @@ void loop() {
             Gstate=' ';
             break;
         case 'T':
+            //Serial.println("Start T");
             //Turn a small angle left
+           LeftBlock();
+           
+            if(lb==1)
+           //if (val_IR_l>350)
+            {
+              TurnBackward();
+            }		
+            else
+            {
+            //Tune a smaller angle left
             goTurn(-1);
+            }
+             
+            //goTurn(-1);
             Gstate=' ';
             Serial.println("d");            
             break;
@@ -76,20 +101,20 @@ void loop() {
          Serial.println("d");            
             break;
         case 'U':
-			//Tune a smaller angle left
-            goTurn2(-1);
-                        Gstate=' ';  
-                                 Serial.println("d");            
-            break;
-        case 'u':
-			//Tune a smaller angle right
-            goTurn2(1);
-                        Gstate=' ';  
-                                 Serial.println("d");            
-            break;
-        case 'G':
-            setMotor(100,100);//Go straight until stuck
-            Gstate=' ';  
+           //goTurn2(-1);
+           //goTurn3(-1);
+           //  Gstate=' ';  
+            Serial.println("d");            
+              break;
+          case 'u':
+              //Tune a smaller angle right              
+              goTurn2(1);
+              Gstate=' ';  
+              Serial.println("d");            
+              break;
+          case 'G':
+              setMotor(100,100);//Go straight until stuck
+              Gstate=' ';  
             break;
         case 'A':
 			//Align Wall for throw ball
@@ -170,10 +195,17 @@ void Navigation()
      FrontBlock();
      FrontBlock_begin();
      RightDisappear();
-     
+     LeftBlock();
+  
      if(rd==2)//In the middle of nowhere
      {
-       if(fb==1 || fb_begin==1)
+       //Serial.print(rd);
+       if(lb==1)
+       {
+         //Serial.print(lb);
+         TurnBackward();
+       }
+       else if(fb==1 || fb_begin==1)
        {
          //Turn Left
          goTurn60(-1);
@@ -201,6 +233,8 @@ void Navigation()
      
 
 }
+
+
 void goUturn()
 {
     while(rd==1)
@@ -260,8 +294,8 @@ void goUturn()
 //rd=2--->In the middle of nowhere
 void RightDisappear() 
 {
-    int val_front=getIr(R_IR);
-    int val_rear=getIr(L_IR);
+    int val_front=analogRead(R_IR);
+    int val_rear=analogRead(L_IR);
     
     if(val_front<150) 
     {
@@ -299,8 +333,8 @@ void RightDisappear()
 }
 //Rule 2
 void FrontBlock() {
-    int val2=getIr(F_IR);
-    int val3=getIr(S_IR);
+    int val2=analogRead(F_IR);
+    int val3=analogRead(S_IR);
     //if(val2 > 500||(val3>500)) {
       if(val2>425){
         fb_c+=1;
@@ -318,8 +352,8 @@ void FrontBlock() {
 
 void FrontBlock_begin() 
 {
-    int val2=getIr(F_IR);
-    int val3=getIr(S_IR);
+    int val2=analogRead(F_IR);
+    int val3=analogRead(S_IR);
     //if(val2 > 500||(val3>500)) {
       if(val2>425 || val3>500)
       {
@@ -337,10 +371,121 @@ void FrontBlock_begin()
     }
 
 
+void LeftBlock()
+{
+  int val=analogRead(Left_IR);
+  if(val>300)
+  {
+      Serial.print("val  ");
+      Serial.print(val);
+            Serial.print("      ");
+      lb_c+=1;
+            Serial.println(lb_c);
+      if(lb_c>lb_thres)
+      {
+          lb_c=0;
+          lb=1;
+      }
+  }
+  else
+  {
+      lb=0;
+      lb_c=0;
+  }
+  
+}
+
+
+void CheckFrontLeft()
+
+{
+
+    int val_l=analogRead(F_IR);
+
+
+
+    if(val_l>350)
+
+    {
+
+        fl_c+=1;
+
+        if(fl_c>fl_thres) 
+
+	{
+
+            fl_c=0;
+
+            fl_flag=1;
+
+        }
+
+    }
+
+    else 
+
+    {
+
+        fl_flag=0;
+
+        fl_c=0;
+
+    }
+
+}
+
+
+void CheckFrontRight()
+
+{
+
+    int val_r=analogRead(S_IR);
+
+
+
+    if(val_r>350)
+
+    {
+
+        fr_c+=1;
+
+        if(fr_c>fr_thres) 
+
+	{
+
+            fr_c=0;
+
+            fr_flag=1;
+
+        }
+
+    }
+
+    else 
+
+    {
+
+        fr_flag=0;
+        fr_c=0;
+    }
+
+}
+
+
+void TurnBackward()
+{
+  goTurn90(1);
+  goTurn90(1);
+  goTurn60(-1);
+  //setMotor(0,0);
+  //delay(10000);
+}
+
+
 //Rule 1
 void FollowRightWall() {
-    int val=getIr(R_IR);
-    int val3=getIr(S_IR);
+    int val=analogRead(R_IR);
+    int val3=analogRead(S_IR);
     
     if(val3>425)
     {
@@ -430,6 +575,10 @@ void goTurn60(int dir) {
     setMotor(100*dir,-80*dir);
     delay(300);
     }
+void goTurn70(int ss,int dir) {
+    setMotor(ss*dir,-ss*dir);
+    delay(100);
+    }
 
 //1: turn right
 void goTurn(int dir) {
@@ -445,7 +594,35 @@ void goTurn2(int dir) {
     setMotor(100,100);
     delay(600);
     }
-
+/*
+void goTurn3(int dir) {
+    setMotor(100*dir,-100*dir);
+    delay(90);
+    int cc=0;
+     fl_flag=0;fr_flag=0;    
+     while (cc<6){        
+          CheckFrontLeft();
+           CheckFrontRight();
+              if(fl_flag==1)
+              {
+                  if(fr_flag==0)
+                  {
+                    goTurn60(120,-1);	
+                  }
+                  else
+                  {
+		      goTurn60(120,dir);
+                   }
+               }
+  
+              else if(fr_flag==1)
+              {goTurn60(120,-1);}
+              else
+              {goTurn60(100,dir);}	    
+              cc+=1;
+          }            
+    }
+*/
 void goStraight(int speed) {
     if(speed<=127) {
         motor.motor0Forward(speed);
@@ -458,18 +635,6 @@ void goStraight(int speed) {
     }
 
 
-
-int getIr(int port) {
-    int tmp=analogRead(port);
-    //IR<200 may be degenerate
-    //for IR>200, we want the change to be smooth
-//  if (IR[port-4][1]<200 ||abs(tmp-IR[port-4][1])<diff_thres)
-//    {
-    IR[port-4][0]=IR[port-4][1];
-    IR[port-4][1]=tmp;
-//    }
-    return IR[port-4][1];
-    }
 
 //---------------
 void getAnalog() {
