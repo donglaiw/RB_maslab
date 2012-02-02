@@ -65,7 +65,7 @@ class Vision (multiprocessing.Process):
         self.diff_count = np.zeros(1, np.uint16)
         self.stuck_thres = self.small_size[0] * self.small_size[1] / 100
         self.stuck_acc=0
-        self.stuck_acc_thres=10
+        self.stuck_acc_thres=20
         
         #6. set C-code
         self.GenCode()
@@ -78,7 +78,7 @@ class Vision (multiprocessing.Process):
         #self.frame = cv.QueryFrame(self.capture)
         while True:
             #1. check for logical communication
-            if self.pipe_vision.poll(0.01):             
+            if self.pipe_vision.poll(0.05):             
                 #command from logic
                 rec=self.pipe_vision.recv()             
                 #print "vision got sent",rec
@@ -186,12 +186,13 @@ class Vision (multiprocessing.Process):
         self.target=lhmin[0]
         if self.target>0 and self.saved==0:
             print "found ball!!!!!!!!!!!!!!!!!!!",time.time()               
+            """
             cv.SaveImage(str(time.time())+"r.jpg",self.sample)
             self.state='r'
             self.display()
             cv.SaveImage(str(time.time())+"rr.jpg",self.sample)
             self.saved=1
-            
+            """
         """
         if self.target!=0:
             self.display()
@@ -214,11 +215,13 @@ class Vision (multiprocessing.Process):
         self.target = blueline[0]
         if self.target>0 and self.saved==1:
             print "found wall!!!!!!!!!!!!!!!!!!!"
+            """
             cv.SaveImage(str(time.time())+"y.jpg",self.sample)
             self.state='y'
             self.display()
             cv.SaveImage(str(time.time())+"yy.jpg",self.sample)
             self.saved=2
+            """
             
     def FindLine(self):
         #threshold+rowsum+findRect
@@ -256,7 +259,7 @@ class Vision (multiprocessing.Process):
             i=0
             while self.circles[3*i] != 0:
                 radius = int(self.circles[i * 3 + 2])
-                print "circle", i, radius, int(self.circles[i * 3]), int(self.circles[i * 3 + 1])
+                #print "circle", i, radius, int(self.circles[i * 3]), int(self.circles[i * 3 + 1])
                 center = (int(self.circles[i * 3]), int(self.circles[i * 3 + 1]))
                 #print self.circles.height,center
                 cv.Circle(self.sample, center, radius, (0, 0, 255), 3, 8, 0)
@@ -501,9 +504,9 @@ connectedness:
     //a little hacky to pass variables...
         if (hindex2==0){
             lhmin[0] = 0;}
-        else if(circle[c*3]<ww/4){
+        else if(circle[c*3]<0.3*ww){
             lhmin[0] = 1;}
-        else if (circle[c*3]>3*ww/4){
+        else if (circle[c*3]>0.7*ww){
             lhmin[0] = 3;}
         else{
             if (circle[c*3+1]>2*hh/3){

@@ -22,7 +22,7 @@ class Logic(multiprocessing.Process):
         self.timeout_nav=20
         self.timeout_track=10
         self.s1=self.timeout_turn+self.timeout_nav
-        self.timeout_s1=100
+        self.timeout_s1=800
         self.st=0; 
         self.dump=0;
 
@@ -109,23 +109,29 @@ class Logic(multiprocessing.Process):
     #main strategy:
     def run(self): 
         # initialize rubberband and clear initial visual stuck detection
+        #while not self.SendState('c',('N',0)):True
+
         self.st=time.time()
-        while not self.SendState('c',('o',0)):True
-        while not self.SendState('v','c'):True
+        # while not self.SendState('c',('o',0)):True
+        
+        """
+        while not self.SendState('v','r'):True
         # stage 1: eat as many red balls as possible: navi+ball
         while time.time()-self.st+self.s1<self.timeout_s1:
             self.FindObj('r')
-        """
+        
+        
         """
         # stage 2: dedicate to find yellow wall
-        """
+        while not self.SendState('v','y'):True
         found=0
         while found==0:
             found=self.FindObj('y')
+        print "obj found"
+        """
         """
         # stage 3: stay around:one step out+ball+back
         """
-
         if time.time()-self.st<20:        
             #not much time left
             self.DumpBall()
@@ -142,23 +148,23 @@ class Logic(multiprocessing.Process):
         """
 
     def FindObj(self,obj):
-        while not self.SendState('v',obj):True
         #1. find obj
-        state=self.RotFindObj(obj,self.timeout_turn)
+        state=self.RotFindObj(self.timeout_turn)
         if state==0:            
             #nothing in the view
-            state=self.NavFindObj(obj,self.timeout_nav)
+            state=self.NavFindObj(self.timeout_nav)
         
         #2.track obj 
         if state>0:
             self.TrackObj(obj,state,self.timeout_track)
+        print "done tracking..."
         return state
 
-    def RotFindObj(self,obj,timeout):        
+    def RotFindObj(self,timeout):        
         #ogj: wall or ball
-        print "rot 2 find obj"
+        print "start rot find obj"
         state=self.SendState2('v','?')                                    
-        print "state.."
+        print "state..",state
         if state<=0:
             # get started
             self.SendState('c',("T",1))            
@@ -166,22 +172,22 @@ class Logic(multiprocessing.Process):
             st=time.time()
             while state ==0 and time.time()-st<=timeout:
                 self.SendState('c',("T",1))
-                self.SendState('v','?')                                    
-                while not self.pipe_lv.poll(0.05):True
-                state=self.pipe_lv.recv()
-                if state==-1:
+                state=self.SendState2('v','?')                                    
+                if state>0:
+                    self.pipe_lc.send(('S',0))
+                elif state==-1:
+                #if state==-1:
                     self.SendState2('c','K')
                     state=0
-                    time.sleep(1.5)
+                    time.sleep(1)
                     #vision may screw up during sharp turns 
                 #print state,"lll"
             #1.1: kill the last Turn
-            self.pipe_lc.send(('S',0))
-            print "rot obj done"
+            print "rot obj done",state
         return state
     
-    def NavFindObj(self,obj,timeout):
-        #start navigation
+    def NavFindObj(self,timeout):
+        print "start navigation"
         state=self.SendState2('v','?')                                    
         print "nav 2 find obj",state
         if state<=0:
@@ -189,9 +195,7 @@ class Logic(multiprocessing.Process):
             st=time.time()
             while state ==0 and time.time()-st<=timeout:
                 #check vision
-                self.SendState('v','?')
-                while not self.pipe_lv.poll(0.05):True
-                state=self.pipe_lv.recv()
+                state=self.SendState2('v','?')
                 #print state,"popo"
                 if state==-1:
                     #stuck,in case ir can't detect it
@@ -208,23 +212,35 @@ class Logic(multiprocessing.Process):
         #1.suppose we stop in time and the ball is still in the vision                 
         #self.AlignObj(state)
         #2 clear out stuck detection
+        print "3 Start Tracking",state
+        
+        self.pipe_lc.send(('u',1))
         while not self.SendState('v','c'):True
         #3 go until wall collision or state=4(close to obj) by vision
         pre_s=state
         st=time.time()
-        while state!=-1 and state!=4:
+        cc=0
+        while state!=-1 and state!=4 and time.time()-st<timeout:
             self.AlignObj(state)
             state=self.SendState2('v','?')
+            print "track state",state
             if state==0:
-                #lose track,undo last adjust until timeout
-                self.AlignObj(4-pre_s)
-                if time.time()-st>timeout:
+                print "lose track,undo last adjust until timeout"
+                if obj=='r':
+                    self.AlignObj(4-pre_s)
+                else:
+                    self.SendState('c',('G',0))
+                cc+=1
+                if time.time()-st>timeout or cc>4:
+
                     break
             else:
                 pre_s=state
             #print state,"receive"
         if state==4:
             if obj=='r':
+                self.pipe_lc.send(('S',0))
+                while not self.SendState('c',('G',0)):True
                 time.sleep(1.5)
                 print "got it "
             else:
@@ -246,6 +262,7 @@ class Logic(multiprocessing.Process):
         #1. visually align the yellow wall after detected
         #self.AlignWall(state)
         #2. physically align the yellow wall
+
         self.SendState2('c','A')
         #3. visually check for special cases when bumpers fail
         #4. throw ball

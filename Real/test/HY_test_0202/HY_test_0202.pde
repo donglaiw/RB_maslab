@@ -433,15 +433,14 @@ void goTurn60(int dir) {
 
 //1: turn right
 void goTurn(int dir) {
-    setMotor(120*dir,-120*dir);
-    delay(200);
+    setMotor(100*dir,-100*dir);
+    delay(300);
     setMotor(0,0);
-    delay(300);    
-}
+    }
 
 void goTurn2(int dir) {
     setMotor(100*dir,-100*dir);
-    delay(90);
+    delay(70);
     setMotor(100,100);
     delay(600);
     }
