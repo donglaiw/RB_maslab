@@ -56,7 +56,7 @@ class Vision (multiprocessing.Process):
               
         #3.2. yellow/green wall
         self.wall = []
-        self.width_thres_y = 0.8 * self.small_size[0]
+        self.width_thres_y = 0.9 * self.small_size[0]
         self.width_thres_g = 0.05 * self.small_size[0]
         self.height_thres = 0.01 * self.small_size[1]        
         self.wall_result=np.zeros(3, np.uint8)
@@ -275,7 +275,8 @@ class Vision (multiprocessing.Process):
                 self.numobj +=1
                 i+= 1
         elif self.state == 'y' or self.state == 'g':
-            self.numobj = self.w_count
+            #if self.state==''
+            self.numobj = (self.w_count,self.)
             if self.wall != []:
                 cv.Resize(self.sample,self.dis_small)
                 #print self.wall,"wooo"
