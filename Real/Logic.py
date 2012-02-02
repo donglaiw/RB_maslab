@@ -228,7 +228,7 @@ class Logic(multiprocessing.Process):
                     break
             else:
                 pre_s=state
-            print state,"receive"
+            #print state,"receive"
         if state==4:
             if obj=='r':
                 time.sleep(1.5)

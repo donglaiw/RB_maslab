@@ -122,10 +122,150 @@ void loop() {
           break;
            }
 
+    /*
+     int val=getIr(F_IR);
+     Serial.println("short:");
+     Serial.println(val);
+    */
+
+
+    /*
+    int val=getIr(R_IR);
+    Serial.println("long:");
+    Serial.println(val);
+    */
     if(Serial.available()){
      Gstate= (char)Serial.read();
     }
+
+//DumpBall();
 }
+
+
+
+void Navigation(){
+     FrontBlock();
+     RightDisappear();
+	if (fb==1){
+        if(rd==1){
+      //go into the new era
+goUturn();
+      }else{
+	goTurn60(-1);
+	}
+    }else{
+        if(rd==1){
+       //go into the new era
+		goUturn();
+	}else{
+   	FollowRightWall();
+        }
+   }
+}
+void goUturn(){
+//forward left
+setMotor(100,120);
+delay(400);
+//turn 90 right
+goTurn90(1);
+setMotor(120,100);
+delay(500);
+RightDisappear();
+if (rd==1){
+//still missing...
+goTurn90(1);
+setMotor(120,100);
+RightDisappear();
+FrontBlock();
+while(rd==1 && fb==0){
+RightDisappear();
+FrontBlock();
+}
+}
+
+}
+//Rule 3
+void RightDisappear() {
+    int val=getIr(R_IR);
+    if(val<100) {
+        rd_c+=1;
+        if(rd_c>rd_thres) {
+            rd_c=0;
+            rd=1;
+            }
+        }
+    else {
+        rd=0;
+        rd_c=0;
+        }
+    }
+//Rule 2
+void FrontBlock() {
+    int val2=getIr(F_IR);
+    int val3=getIr(S_IR);
+    if(val2 > 500||(val3>500)) {
+        fb_c+=1;
+        if(fb_c>fb_thres) {
+            fb_c=0;
+            fb=1;
+            }
+        }
+    else {
+        fb=0;
+        fb_c=0;
+        }
+    }
+
+//Rule 1
+void FollowRightWall() {
+    int val=getIr(R_IR);
+    //right wall disappear
+        //400-500 is ideal
+        if(val >550) {
+            // if we are way too close, turn away fast
+            state=0;
+            }
+        else if(val >450) {
+            // if we are too close, drift away
+            state=1;
+            }
+        else if(val < 250) {
+            // too far away, turn towards wall and go straight
+            state=2;
+            }
+        else if(val<350) {
+            // default, drift towards wall
+            state=3;
+            }
+
+    if (state!=prestate) {
+        prestate=state;
+        switch (state) {
+            case 0:
+                setMotor(80,120);
+                break;
+            case 1:
+                setMotor(100,120);
+                break;
+            case 2:
+                setMotor(120,100);
+                break;
+            case 3:
+                setMotor(120,80);
+                break;
+            }
+        }
+    }
+
+void DumpBall() {
+    //don't want it on all time...
+    servo.attach(7);
+    servo.write(160);
+    delay(2000);
+    servo.write(60);
+    delay(1000);
+    servo.detach();
+    }
 
 int AlignWall(){
   int val_l=analogRead(F_IR);
@@ -161,244 +301,10 @@ int AlignWall(){
   
   return aligned;
 }
-
-void Navigation()
-{
-     FrontBlock();
-     FrontBlock_begin();
-     RightDisappear();
-     
-     if(rd==2)//In the middle of nowhere
-     {
-       if(fb==1 || fb_begin==1)
-       {
-         //Turn Left
-         goTurn60(-1);
-       }
-       else
-       {
-       //GoStraight()
-         setMotor(120,120);
-      // setMotor(0,0);
-       }
-      
-     }
-     else if(rd==1)//Right Wall Disappear
-     {
-         goUturn();
-     }
-     else if(fb==1)
-     {
-         goTurn60(-1);
-     }
-     else
-     {
-         FollowRightWall();
-     }
-     
-
-}
-void goUturn()
-{
-    while(rd==1)
-    {
-        setMotor(100,100);
-        RightDisappear();
-    }
-    goTurn90(1);
-    setMotor(100,80);
-    delay(350);
-    RightDisappear();
-    
-    if(rd!=0)
-    {
-        goTurn90(1);
-    }
-  
-  //forward left
-  //setMotor(80,100);
-  //delay(100);
-  
-  
-  //setMotor(100,40);
-  //delay(500);
-  
- // setMotor(0,0);
- // delay(2000);
-  
-  
-  //turn 90 right
-  //goTurn90(1); 
-  
- // setMotor(120,80);
-  //delay(100);
-  //setMotor(120,80);
-  //delay(200);
-  //RightDisappear();
-/*
-  if (rd==1)
-  {
-    //still missing...
-    goTurn90(1);
-    setMotor(120,100);
-    RightDisappear();
-    FrontBlock();
-   while(rd==1 && fb==0)
-   {
-      RightDisappear();
-      FrontBlock();
-   }
- }
-*/
-}
-//Rule 3
-//rd=0--->Right Wall Appear
-//rd=1--->Right Wall Disappear
-//rd=2--->In the middle of nowhere
-void RightDisappear() 
-{
-    int val_front=getIr(R_IR);
-    int val_rear=getIr(L_IR);
-    
-    if(val_front<150) 
-    {
-        rd_c+=1;
-        
-        if(val_rear<150)
-        {
-            md_c+=1;
-        }
-
-
-        
-        if(rd_c>rd_thres+1) 
-        {
-            if(md_c>=rd_thres)
-            {
-                rd_c=0;
-                md_c=0;
-                rd=2;
-            }
-            else
-            {
-                md_c=0;
-                rd_c=0;
-                rd=1;
-            }
-        }
-    }
-    else 
-    {
-        rd=0;
-        rd_c=0;
-        md_c=0;
-    }
-}
-//Rule 2
-void FrontBlock() {
-    int val2=getIr(F_IR);
-    int val3=getIr(S_IR);
-    //if(val2 > 500||(val3>500)) {
-      if(val2>425){
-        fb_c+=1;
-        if(fb_c>fb_thres) {
-            fb_c=0;
-            fb=1;
-            }
-        }
-    else {
-        fb=0;
-        fb_c=0;
-        }
-    }
-
-
-void FrontBlock_begin() 
-{
-    int val2=getIr(F_IR);
-    int val3=getIr(S_IR);
-    //if(val2 > 500||(val3>500)) {
-      if(val2>425 || val3>500)
-      {
-        fb_c_begin+=1;
-        if(fb_c_begin>fb_thres) 
-        {
-            fb_c_begin=0;
-            fb_begin=1;
-        }
-      }
-    else {
-        fb_begin=0;
-        fb_c_begin=0;
-        }
-    }
-
-
-//Rule 1
-void FollowRightWall() {
-    int val=getIr(R_IR);
-    int val3=getIr(S_IR);
-    
-    if(val3>425)
-    {
-        state=-1;
-    }
-    
-    //right wall disappear
-        //400-500 is ideal
-    else if(val >500) {
-            // if we are way too close, turn away fast
-            state=0;
-            }
-        else if(val >450) {
-            // if we are too close, drift away
-            state=1;
-            }
-        else if(val < 250) {
-            // too far away, turn towards wall and go straight
-            state=2;
-            }
-        else if(val<350) {
-            // default, drift towards wall
-            state=3;
-            }
-
-    if (state!=prestate) {
-        prestate=state;
-        switch (state) {
-            case -1:
-                setMotor(0,120);
-                break;
-            case 0:
-                setMotor(80,120);
-                break;
-            case 1:
-                setMotor(100,120);
-                break;
-            case 2:
-                setMotor(120,100);
-                break;
-            case 3:
-                setMotor(120,80);
-                break;
-            }
-        }
-    }
-
-void DumpBall() {
-    //don't want it on all time...
-    servo.attach(7);
-    servo.write(160);
-    delay(2000);
-    servo.write(60);
-    delay(10);
-    servo.detach();
-    }
-
 void getOutStuck(){
   setMotor(-100,-100);
   delay(400);
-  goTurn90(1);
+  goTurn90(-1);
   
 }
 
@@ -419,12 +325,12 @@ void setMotor(int sp0,int sp1) {
 
 void goTurn90(int dir) {
     setMotor(100*dir,-100*dir);
-    delay(650);
+    delay(800);
     setMotor(0,0);
     }
 
 void goTurn60(int dir) {
-    setMotor(100*dir,-80*dir);
+    setMotor(100*dir,-100*dir);
     delay(300);
     }
 
@@ -433,12 +339,13 @@ void goTurn(int dir) {
     setMotor(100*dir,-100*dir);
     delay(300);
     setMotor(0,0);
+    delay(500);
     }
 
 void goTurn2(int dir) {
     setMotor(100*dir,-100*dir);
     delay(70);
-    setMotor(100,100);
+    setMotor(60,60);
     delay(600);
     }
 
@@ -468,17 +375,9 @@ int getIr(int port) {
     }
 
 //---------------
-void getAnalog() {
-    int port = 1;//getData(2);
-    int analogData = analogRead(port);
-    Serial.println(analogData);
-    delay(10);
-    }
-//---------------
-void getDigital() {
-    int port = 1;//getData(2);
-    int digitalData = digitalRead(port);
+void getSwitch() {
+    int digitalData = digitalRead(22);
     Serial.println(digitalData);
-    delay(10);
+    delay(100);
     }
 
