@@ -181,7 +181,7 @@ class Vision (multiprocessing.Process):
         #self.maxnumcl = maxnumcl
         #print [e for e in count if e>10],thres_size        
         #print count
-        print circle[0],circle[1],circle[2]
+        #print circle[0],circle[1],circle[2]
         #print self.circles[0],self.circles[1]
         self.target=lhmin[0]
         if self.target>0 and self.saved==0:
