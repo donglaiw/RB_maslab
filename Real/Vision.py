@@ -83,8 +83,10 @@ class Vision (multiprocessing.Process):
                 rec=self.pipe_vision.recv()             
                 #print "vision got sent",rec
                 if rec=='?':
+                    """
                     if self.target!=0:
                         print self.target,"sent"
+                    """
                     self.pipe_vision.send(self.target)
                 elif rec=='c':
                     print "clear out"
@@ -177,9 +179,9 @@ class Vision (multiprocessing.Process):
         #print "haha",self.maxnumcl
         #self.circle = circle
         #self.maxnumcl = maxnumcl
-        print [e for e in count if e>10],thres_size        
+        #print [e for e in count if e>10],thres_size        
         #print count
-        #print circle[0],circle[1]
+        print circle[0],circle[1],circle[2]
         #print self.circles[0],self.circles[1]
         self.target=lhmin[0]
         if self.target>0 and self.saved==0:
