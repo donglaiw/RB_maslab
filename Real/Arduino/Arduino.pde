@@ -30,12 +30,14 @@ CompactQik2s9v1 motor = CompactQik2s9v1(&mySerial, rstPin);
 
 int IR[4][2]= {{0,0},{0,0},{0,0},{0,0}}; //0:old val, 1: new val
 int prestate=-1,state=-1;
-int fb=0,fb_c=0,fb_thres=10;
-int rd=0,rd_c=0,rd_thres=5;
+int fb=0,fb_c=0,fb_thres=5;//front bolck
+int fb_begin=0, fb_c_begin=0;
+int rd=0,rd_c=0,rd_thres=5;//rightwall disappear
+int md=0,md_c=0;//middle of nowhere
 int diff_thres=50; //simple filter out ir outlier
 
 char Gstate=' ';
-
+int ccc=0;
 
 
 void setup() {
