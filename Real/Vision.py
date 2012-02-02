@@ -184,6 +184,7 @@ class Vision (multiprocessing.Process):
         self.target=lhmin[0]
         if self.target>0 and self.saved==0:
             print "found ball!!!!!!!!!!!!!!!!!!!",time.time()               
+            cv.SaveImage(str(time.time())+"r.jpg",self.sample)
             self.state='r'
             self.display()
             cv.SaveImage(str(time.time())+"rr.jpg",self.sample)
@@ -211,6 +212,7 @@ class Vision (multiprocessing.Process):
         self.target = blueline[0]
         if self.target>0 and self.saved==1:
             print "found wall!!!!!!!!!!!!!!!!!!!"
+            cv.SaveImage(str(time.time())+"y.jpg",self.sample)
             self.state='y'
             self.display()
             cv.SaveImage(str(time.time())+"yy.jpg",self.sample)
