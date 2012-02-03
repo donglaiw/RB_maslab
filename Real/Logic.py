@@ -118,7 +118,6 @@ class Logic(multiprocessing.Process):
         print "Stage I.......................",time.time()-self.st
         while not self.SendState('v','r'):True
         while True:
-        #while time.time()-self.st+self.s1<self.timeout_s1:
             self.FindObj('r')
         """
         """
@@ -184,13 +183,14 @@ class Logic(multiprocessing.Process):
                 if state>0:
                     self.pipe_lc.send(('S',0))
                 elif state==-1:
-                #if state==-1:
+                    #may be screwed and no more rot find
                     self.SendState2('c',('K',1))
-                    state=0
                     #vision may screw up during sharp turns 
                 #print state,"lll"
             #1.1: kill the last Turn
             print "rot obj done",state
+        if state>0:
+            self.SendState2('c',('u',1))
         return state
     
     def NavFindObj(self,timeout):
@@ -204,13 +204,11 @@ class Logic(multiprocessing.Process):
                 state=self.SendState2('v','?')
                 #print state,"popo"
                 if state==-1:
-                    #stuck,in case ir can't detect it
                     self.SendState2('c',('K',1))
-                    self.SendState2('c',('N',0))
                     state=0
                 elif state>=1: 
                     self.pipe_lc.send(('S',0))
-                    break;   
+        self.AlignObj(state)
         return state
 
     def TrackYellowWall(self,timeout):   
@@ -227,7 +225,7 @@ class Logic(multiprocessing.Process):
             while state !=-1 and state!=4 and time.time()-st<=timeout:
                 self.SendState('c',("t",1))
                 state=self.SendState2('v','?')                                   
-                print state,"now",time.time()
+                #print state,"now",time.time()
                 if state>3:
                     self.pipe_lc.send(('S',0))
                 elif state==-1:
@@ -246,7 +244,6 @@ class Logic(multiprocessing.Process):
         #2 clear out stuck detection
         print "3:   Start Tracking",time.time()
         
-        self.pipe_lc.send(('u',1))
         while not self.SendState('v','c'):True
         #3 go until wall collision or state=4(close to obj) by vision
         pre_s=state
@@ -255,14 +252,14 @@ class Logic(multiprocessing.Process):
         while state!=-1 and state!=4 and time.time()-st<timeout:
             self.AlignObj(state)
             state=self.SendState2('v','?')
-            print "track state",state
+            #print "track state",state
             if state==0:
-                print "lose track,undo last adjust until timeout"
+                #print "lose track,undo last adjust until timeout"
                 self.AlignObj(4-pre_s)
                 cc+=1
                 if time.time()-st>timeout or cc>3:
-                    self.SendState2('c',('C',0))
-                    break
+                    self.SendState2('c',('C',1))
+                    cc=0
             else:
                 pre_s=state
             #print state,"receive"

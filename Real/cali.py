@@ -47,7 +47,7 @@ class Calibrate():
         self.objLabel=Label()        
         self.vision=vv.Vision(None)
         self.vision.Init_Binary()
-        self.state=['r','y','b','g']
+        self.state=['r','y','b']
         self.setUp()
 
            
@@ -76,8 +76,8 @@ class Calibrate():
         frameimg.pack()
        
     def displayImage(self):
-        self.vision.frame = cv.QueryFrame(self.vision.capture)        
-        #self.vision.frame = cv.LoadImage("gg.jpg")
+        #self.vision.frame = cv.QueryFrame(self.vision.capture)        
+        self.vision.frame = cv.LoadImage("gg.jpg")
         cv.Resize(self.vision.frame, self.vision.sample)        
         cv.CvtColor(self.vision.sample, self.vision.hsv_frame, cv.CV_BGR2HSV)       
         self.vision.hsv_np= np.asarray(self.vision.hsv_frame[:, :], dtype=np.uint8)
@@ -93,15 +93,15 @@ class Calibrate():
         elif self.cali_type.get()==1:
             #yellow wall
             self.vision.ThresWall('y')
-            self.vision.FindWall('y')
-            self.vision.FindWall2('y')
-        elif self.cali_type.get()==3:
-            #yellow wall
-            self.vision.ThresWall('g')
-            self.vision.FindWall('g')
-            self.vision.FindWall2('g')
+            self.vision.FindWall()
+            self.vision.FindWall2()
         else:
             #blue line
+            self.vision.ThresWall('b')
+            self.vision.FindLine()
+        #cv.SaveImage("pp.jpg",self.vision.thresholded)
+        self.vision.state=self.state[self.cali_type.get()]
+        self.vision.display()
             self.vision.ThresWall('b')
             self.vision.FindLine()
         #cv.SaveImage("pp.jpg",self.vision.thresholded)
@@ -181,12 +181,6 @@ class Calibrate():
         a.close()
 
     def saveImg(self):
-        cv.SaveImage('ll'+str(time.time())+".jpg",self.vision.frame)
-        
-    def createHSV(self,index):
-        framehsv = Frame(self.root)
-        #Create a Label in textFrame
-        Label(framehsv,text="HSV "+str(index)+":   H:").pack(side = LEFT)
         self.hsvEntry[index*6] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6],width=3)        
         self.hsvEntry[index*6].pack(side = LEFT)
         
@@ -196,21 +190,18 @@ class Calibrate():
         
         if index==0:
             Label(framehsv,text="S:").pack(side = LEFT)    
-        self.hsvEntry[index*6+1] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6+1],width=3)             
-        if index==0:
+            self.hsvEntry[index*6+1] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6+1],width=3)             
             self.hsvEntry[index*6+1].pack(side = LEFT)
             Label(framehsv,text="-").pack(side = LEFT)
-        self.hsvEntry[index*6+4] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6+4],width=3)              
-        if index==0:
-            self.hsvEntry[index*6+4].pack(side = LEFT) 
+            self.hsvEntry[index*6+4] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6+4],width=3)              
+            self.hsvEntry[index*6+4].pack(side = LEFT)
+        
             Label(framehsv,text="V:").pack(side = LEFT)    
-            # Create an hsv1 Widget in framehsv            
-        self.hsvEntry[index*6+2] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6+2],width=3)
-        if index==0:
+            # Create an hsv1 Widget in framehsv
+            self.hsvEntry[index*6+2] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6+2],width=3)
             self.hsvEntry[index*6+2].pack(side = LEFT)             
             Label(framehsv,text="-").pack(side = LEFT)
-        self.hsvEntry[index*6+5] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6+5],width=3)
-        if index==0:
+            self.hsvEntry[index*6+5] = MaxLengthEntry(framehsv,value=self.vision.hsv[self.cali_type.get()][index*6+5],width=3)
             self.hsvEntry[index*6+5].pack(side = LEFT)              
 
         framehsv.pack()
