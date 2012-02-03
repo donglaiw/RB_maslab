@@ -66,20 +66,7 @@ void loop() {
   if(ccc==0){
     //TurnBackward();
     }
-/*  
-  int val_l=analogRead(R_IR);
-  int val_r=analogRead(L_IR);
-   int val_e=analogRead(Left_IR);
-  Serial.println("R");
- 
-  Serial.println(val_l);
-  Serial.println("L");
- 
-    Serial.println(val_r);
-  Serial.println("Left");
- 
-        Serial.println(val_e);
-*/
+
   switch(Gstate) {
         case 'N':
             //Navigation,persistent state
@@ -140,26 +127,19 @@ void loop() {
        			{
                //Go Back, Turn Right, Go Forward
                			setMotor(-100,-100);
-               			delay(500);
-               			setMotor(110,-110);
+               			delay(300);
+               			setMotor(100,-100);
                			delay(300);
                			setMotor(100,100);
-               			delay(500);
-                                setMotor(0,100);
-               			delay(200);
+               			delay(300);
+                                //setMotor(0,100);
+               			//delay(200);
        			}
        			else
        			{
                //Go Back, Turn(-1) (left), Go Forward
                //goTurn(-1);
-               			setMotor(-100,-100);
-               			delay(500);
-               			setMotor(-110,110);
-               			delay(300);
-               			setMotor(100,100);
-               			delay(500);
-                                setMotor(100,0);
-               			delay(400);
+                           goTurn2(-1);
       			 }
 
 
@@ -170,13 +150,13 @@ void loop() {
        //goTurn(-1);
        //goTurn(-1);
        			setMotor(-100,-100);
-       			delay(500);
-       			setMotor(-110,110);
+       			delay(300);
+       			setMotor(-100,100);
        			delay(200);
        			setMotor(100,100);
-       			delay(500);
-                        setMotor(100,-100);
-                        delay(300);
+       			delay(300);
+                        //setMotor(100,-100);
+                        //delay(300);
 
 		}
 		else
@@ -190,8 +170,7 @@ void loop() {
                         
             Gstate=' ';  
             Serial.println("d");            
-            break;
-            
+            break;            
         case 'u':
                 CheckFrontLeft();
 		CheckFrontRight();
@@ -202,26 +181,19 @@ void loop() {
        			{
                //Go Back, Turn Right, Go Forward
                			setMotor(-100,-100);
-               			delay(500);
-               			setMotor(110,-110);
+               			delay(300);
+               			setMotor(100,-100);
                			delay(300);
                			setMotor(100,100);
-               			delay(500);
-                                setMotor(0,100);
-               			delay(200);
+               			delay(300);
+                                //setMotor(0,100);
+               			//delay(200);
        			}
        			else
        			{
                //Go Back, Turn(1) (left), Go Forward
                //goTurn(-1);
-               			setMotor(-100,-100);
-               			delay(500);
-               			setMotor(110,-110);
-               			delay(300);
-               			setMotor(100,100);
-               			delay(500);
-                                setMotor(0,100);
-               			delay(400);
+                               goTurn2(-1);
       			 }
 
 
@@ -232,13 +204,13 @@ void loop() {
        //goTurn(-1);
        //goTurn(-1);
        			setMotor(-100,-100);
-       			delay(500);
-       			setMotor(-110,110);
+       			delay(300);
+       			setMotor(-100,100);
        			delay(200);
        			setMotor(100,100);
-       			delay(500);
-                        setMotor(100,-100);
-                        delay(300);
+       			delay(300);
+                        //setMotor(100,-100);
+                        //delay(300);
 
 		}
 		else
@@ -246,79 +218,17 @@ void loop() {
        			goTurn2(-1);
 		}
             
-            
-        
-        
-			//Tune a smaller angle right
-            //goTurn2(1);
                         Gstate=' ';  
                                  Serial.println("d");            
             break;
         case 'G':
-             CheckFrontLeft();
-		CheckFrontRight();
-
-		if(fl_flag==1)
-		{
-       			if(fr_flag==0)
-       			{
-               //Go Back, Turn Right, Go Forward
-               			setMotor(-100,-100);
-               			delay(500);
-               			setMotor(110,-110);
-               			delay(300);
-               			setMotor(100,100);
-               			delay(500);
-                                setMotor(0,100);
-               			delay(200);
-       			}
-       			else
-       			{
-               //Go Back, Turn(1) (left), Go Forward
-               //goTurn(-1);
-               			setMotor(-100,-100);
-               			delay(500);
-               			setMotor(110,-110);
-               			delay(300);
-               			setMotor(100,100);
-               			delay(500);
-                                setMotor(0,100);
-               			delay(400);
-      			 }
-
-
-		}
-		else if(fr_flag==1)
-		{
-       // Go Back, Turn Left, Go Forward
-       //goTurn(-1);
-       //goTurn(-1);
-       			setMotor(-100,-100);
-       			delay(500);
-       			setMotor(-110,110);
-       			delay(200);
-       			setMotor(100,100);
-       			delay(500);
-                        setMotor(100,-100);
-                        delay(300);
-
-		}
-		else
-		{
-//       			goTurn2(-1);
-                    setMotor(120,120);//Go straight a little bit
-                    delay(300);
-
-		}
             
-            
-            
-            //setMotor(120,120);//Go straight a little bit
-            //delay(300);
+            setMotor(120,120);//Go straight a little bit
+            delay(300);
             Gstate=' ';  
             break;
         case 'A':
-			//Align Wall for throw ball
+		//Align Wall for throw ball
             AlignWall();
              Serial.println("d");            
               delay(10);
@@ -340,7 +250,7 @@ void loop() {
           getOutStuck();
          Serial.println("d");            
          delay(10);
-            Gstate=' ';  
+            Gstate='N';  
             break;
         case 'O':
           analogWrite(9,0);
@@ -398,13 +308,7 @@ int AlignWall(){
        FrontBlock_begin();
        RightDisappear();
        LeftBlock();
-      Serial.print("pppp");
-    Serial.println(rd);
-        Serial.print("qqqq");
-        Serial.print(lb);
-
-
-    
+          
      if(rd==2)//In the middle of nowhere
      {
        //Serial.print(rd);
@@ -448,56 +352,6 @@ int AlignWall(){
 }
 
 
-
-
-void Navigation()
-{
-     FrontBlock();
-     FrontBlock_begin();
-     RightDisappear();
-     LeftBlock();
-
-     if(rd==2)//In the middle of nowhere
-     {
-       //Serial.print(rd);
-       if(lb==1)
-       {
-         //Serial.print(lb);
-         TurnBackward();
-       }
-       else if(fb==1 || fb_begin==1)
-       {
-         //Turn Left
-         goTurn60(-1);
-       }
-       else
-       {
-       //GoStraight()
-         setMotor(120,120);
-      // setMotor(0,0);
-       }
-
-     }
-     else if(rd==1)//Right Wall Disappear
-     {
-         goUturn();
-     }
-     else if(fb==1)
-     {
-         goTurn60(-1);
-     }
-     else
-     {
-         FollowRightWall();
-     }
-
-
-}
-
-
-
-
-
 void goUturn()
 {
     while(rd==1)
@@ -514,42 +368,6 @@ void goUturn()
     {
         goTurn90(1);
     }
-  
-  //forward left
-  //setMotor(80,100);
-  //delay(100);
-  
-  
-  //setMotor(100,40);
-  //delay(500);
-  
- // setMotor(0,0);
- // delay(2000);
-  
-  
-  //turn 90 right
-  //goTurn90(1); 
-  
- // setMotor(120,80);
-  //delay(100);
-  //setMotor(120,80);
-  //delay(200);
-  //RightDisappear();
-/*
-  if (rd==1)
-  {
-    //still missing...
-    goTurn90(1);
-    setMotor(120,100);
-    RightDisappear();
-    FrontBlock();
-   while(rd==1 && fb==0)
-   {
-      RightDisappear();
-      FrontBlock();
-   }
- }
-*/
 }
 //Rule 3
 //rd=0--->Right Wall Appear
@@ -699,20 +517,11 @@ void TurnBackward()
 void LeftBlock()
 {
   int val=analogRead(Left_IR);
-  
-  
-      Serial.print("val  ");
-      Serial.print(val);
-            Serial.print("      ");
-   
-  
-  if(val>290)
+  if(val>300)
   {
-      Serial.print("val  ");
-      Serial.print(val);
-            Serial.print("      ");
+
       lb_c+=1;
-            Serial.println(lb_c);
+
       if(lb_c>lb_thres)
       {
           lb_c=0;
@@ -732,7 +541,7 @@ void CheckFrontLeft()
 {
    int val_l=analogRead(F_IR);
 
-   if(val_l>350)
+   if(val_l>500)
    {
        fl_c+=1;
        if(fl_c>fl_thres)
@@ -753,7 +562,7 @@ void CheckFrontRight()
 {
    int val_r=analogRead(S_IR);
 
-   if(val_r>350)
+   if(val_r>500)
    {
        fr_c+=1;
        if(fr_c>fr_thres)
