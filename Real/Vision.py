@@ -91,7 +91,7 @@ class Vision (multiprocessing.Process):
                     """
                     self.pipe_vision.send(self.target)
                 elif rec=='c':
-                    print "clear out"
+                    #print "clear out"
                     self.stuck_acc=0
                     self.target=0
                 else:
@@ -180,16 +180,14 @@ class Vision (multiprocessing.Process):
         #print circle[0],circle[1],circle[2]
         #print self.circles[0],self.circles[1]
         self.target=lhmin[0]        
+        """
         if self.target>0:
             print "found ball!!!!!!!!!!!!!!!!!!!",time.time()               
-            """
             cv.SaveImage(str(time.time())+"r.jpg",self.sample)
             self.state='r'
             self.display()
             cv.SaveImage(str(time.time())+"rr.jpg",self.sample)
             self.saved=1
-            """
-        """
         if self.target!=0:
             self.display()
             print "save"
