@@ -114,14 +114,16 @@ class Logic(multiprocessing.Process):
         self.SendState2('c',('o',0))
         
         # stage 1: eat as many red balls as possible: navi+ball
-        """
         
         print "Stage I.......................",time.time()-self.st
         while not self.SendState('v','r'):True
-        while time.time()-self.st+self.s1<self.timeout_s1:
+        while True:
+        #while time.time()-self.st+self.s1<self.timeout_s1:
             self.FindObj('r')
         """
+        """
         
+        """
         # stage 2: dedicate to find yellow wall
         print "Stage II.......................",time.time()-self.st
         while not self.SendState('v','y'):True
@@ -131,7 +133,6 @@ class Logic(multiprocessing.Process):
         print "obj found"
         self.DumpBall()
         print "dump"
-        """
         """
         # stage 3: stay around:one step out+ball+back
         #self.DumpBall()
@@ -254,7 +255,7 @@ class Logic(multiprocessing.Process):
         while state!=-1 and state!=4 and time.time()-st<timeout:
             self.AlignObj(state)
             state=self.SendState2('v','?')
-            #print "track state",state
+            print "track state",state
             if state==0:
                 print "lose track,undo last adjust until timeout"
                 self.AlignObj(4-pre_s)

@@ -783,15 +783,14 @@ void DumpBall() {
 
 void getOutStuck(){
   setMotor(-100,-100);
-  delay(400);
+  delay(300);
     int val_rf=analogRead(R_IR);
     int val_lf=analogRead(Left_IR);
     if(val_rf>val_lf){
-goTurn90(-1);
-}else{
-goTurn90(f1);
-
-}
+    goTurn60(-1);
+    }else{
+    goTurn60(1);
+    }
 
   
 }
